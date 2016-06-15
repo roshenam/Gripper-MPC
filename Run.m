@@ -1,5 +1,15 @@
-
-
+x0 = 5; y0 = 2; theta0 =-.5; vx0 = 0; vy0 = 1; omega0 = 0; phi = .5; omegaD = 10*pi/180;
+init = [x0 y0 theta0 vx0 vy0 omega0];
+params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
+params.Ts = .2;
+params.eta = 1; params.etaR = 1; params.beta1 = .05; params.beta2 = 2; 
+params.beta3 = .5; params.beta4 = omegaD*1.7; params.beta5 = -omegaD*1.2;
+params.N = 20; params.Nc = 10;
+thetaD = phi; 
+x0vec = [x0; y0; theta0-phi; vx0; vy0; omega0];
+[xtot, utot,ytot] = MPC_Quad(init,params,phi);
+xD = [0 0 phi 0 0 0];
+%%
 x0 = 5; y0 = 2; theta0 =-.5; vx0 = 0; vy0 = 1; omega0 = 0; phi = .5; omegaD = 10*pi/180;
 init = [x0 y0 theta0 vx0 vy0 omega0];
 params.rp = .2; params.rtol = .2+.05;  params.rs = .2; params.gamma = 10*pi/180;
