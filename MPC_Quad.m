@@ -57,7 +57,7 @@ utot = [];
 ytot = [];
 xtot = x0vec;
 counter = 0;
-
+% changes that don't matter
 while norm(x0vec(1:2))>=(rp+rs)
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
