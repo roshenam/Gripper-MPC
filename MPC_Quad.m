@@ -1,5 +1,8 @@
 function [xtot, utot,ytot] = MPC_Quad(init,params,phi)
-% This version uses a quadratic cone instead of a linear cone
+% This version uses a quadratic cone instead of a linear cone. Turns out
+% this is not convex. Will explore in the future. For now have left in the
+% non-convex quadratic constraints and have added quadratic constraints for
+% the thrust max
 % Extracting initial conditions and parameters from inputs
 x0 = init(1); y0 = init(2); theta0 = init(3); vx0 = init(4); vy0 = init(5);
 omega0 = init(6); 
