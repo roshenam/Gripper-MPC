@@ -5,10 +5,10 @@ R2 = [cos(eta) sin(eta) 0; -sin(eta) cos(eta) 0; 0 0 1];
 R = R1*R2;
 vIJK = R*[X;Y;Z];
 values = (x.^2 + y.^2).^.5 - z.*tan(beta);
-values = subs(values, x, vIJK(1))
-values = subs(values, y, vIJK(2))
-values = subs(values, z, vIJK(3))
-values = simplify(values)
+values = subs(values, x, vIJK(1));
+values = subs(values, y, vIJK(2));
+values = subs(values, z, vIJK(3));
+values = simplify(values);
 %%
 x = linspace(-3,3);
 y = linspace(-3,3);
