@@ -1,4 +1,4 @@
-function [xtot, utot,ytot] = MPC_3D(init,params,phi,nu,pred)
+function [xtot, utot] = MPC_3D(init,params,phi,nu,pred)
 % If pred is zero, there will be no prediction of the LOS cone constraints
 % in the model. If pre is one, there will be prediction of the LOS cone
 % constraints. Rotation for docking port is first rotate about the z axis
@@ -11,9 +11,7 @@ function [xtot, utot,ytot] = MPC_3D(init,params,phi,nu,pred)
 x0 = init(1); y0 = init(2); z0 = init(3);  
 vx0 = init(4); vy0 = init(5); vz0 = init(6);
 rp = params.rp; rs = params.rs; gamma = params.gamma;
-Ts = params.Ts; eta = params.eta; 
-beta1 = params.beta1; beta2 = params.beta2; beta3 = params.beta3; 
-beta4 = params.beta4; 
+Ts = params.Ts;  
 N = params.N; Nc = params.Nc; 
 
 x0vec = [x0; y0; z0; vx0; vy0; vz0];
@@ -47,9 +45,15 @@ while norm(x0vec(1:2))>=(rp+rs)
     X(:,2:N+1) == sysD.a*X(:,1:N) + sysD.b*U;
     X(:,1) == x0vec;
     max(U(1,:).^2 + U(2,:).^2 + U(3,:).^2) <= Umax(1)^2;
-    max(((X(3,:).*sin(phi) + X(2,:).*cos(eta)*cos(phi) - X(1,:).*cos(phi)*sin(eta)).^2 +...
-    (X(1,:).*cos(eta) + X(2,:).*sin(eta)).^2).^(1/2) - tan(beta).*(X(3,:).*cos(phi) -...
-    X(2,:).*cos(eta)*sin(phi) + X(1,:).*sin(eta)*sin(phi)) + U(4,:)) <= 0;
+    
+    % CVX returns that a portion of this is illegal ({convex}^.5), although
+    % the whole thing is convex (cone shape) so not sure how to get around
+    % this. For now, ditch this and go with linear approximations of the
+    % cone like in the paper. 
+%     max(pow_p((X(3,:).*sin(phi) + X(2,:).*cos(nu)*cos(phi) - X(1,:).*cos(phi)*sin(nu)).^2 +...
+%     (X(1,:).*cos(nu) + X(2,:).*sin(nu)).^2,0.5) - tan(beta).*(X(3,:).*cos(phi) -...
+%     X(2,:).*cos(nu)*sin(phi) + X(1,:).*sin(nu)*sin(phi)) + U(4,:)) <= 0;
+
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') + X(:,N+1)'*P*X(:,N+1));
     cvx_end
     u = U(:,1);
