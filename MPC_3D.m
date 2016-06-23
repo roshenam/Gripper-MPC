@@ -64,7 +64,7 @@ utot = [];
 ytot = [];
 xtot = x0vec;
 counter = 0;
-while norm(x0vec(1:2))>=(rp+rs)
+while norm(x0vec(1:3))>=(rp+rs)
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     cvx_begin quiet
