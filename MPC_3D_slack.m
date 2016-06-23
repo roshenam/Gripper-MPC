@@ -50,7 +50,7 @@ for k=1:8
 end
 
 % Upper bounds on thrust inputs
-Umax = 1;
+Umax = params.Umax;
 Umin = -Umax;
 sysD = ss(A,B,C,D);
 sysD = c2d(sysD,Ts);

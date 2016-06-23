@@ -5,6 +5,7 @@ params.nu = 0; params.phi = -pi/4;
 params.Ro = 850*10^3; % [m] orbital radius of target
 params.mu = 3.986004418*10^14; % [m^3/s^2] standard gravitational parameter of earth
 params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
+params.Umax = 3;
 params.Ts = .2;
 params.N = 20; params.Nc = 10;
 [xtot, utot,cost] = MPC_3D_slack(init,params,pred,CWH);
