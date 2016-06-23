@@ -1,4 +1,4 @@
-x0 = 0; y0 = 3; z0 = 2.5; vx0 = 0; vy0 = 1; vz0 = 1; nu = 0; phi = -pi/4;
+x0 =  5; y0 = 0; z0 = 5; vx0 = 0; vy0 = 1; vz0 = 1; nu = 0; phi = -pi/4;
 pred = 0;
 init = [x0 y0 z0 vx0 vy0 vz0];
 params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;

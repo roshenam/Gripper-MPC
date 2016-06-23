@@ -6,6 +6,7 @@ function [xtot, utot] = MPC_3D(init,params,phi,nu,pred)
 
 % 6/20 First doing without any attitude control to avoid having to
 % linearize equations. Translation and rotation separate.
+% 6/22 
 
 % Extracting initial conditions and parameters from inputs
 x0 = init(1); y0 = init(2); z0 = init(3);  
@@ -18,21 +19,31 @@ x0vec = [x0; y0; z0; vx0; vy0; vz0];
 
 % Creating dynamic system 
 A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1; 
-B = zeros(6,4); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
-C = eye(6); D = zeros(6,4);
+B = zeros(6,3); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
+C = zeros(8,6); D = zeros(8,3);
+
+% C is a matrix of the weights on the constrained outputs due to the 8
+% planes approximating the cone
+Cs = Plane_Gen(init, params,phi,nu);
+for k=1:8
+    C(k,1) = Cs(1,k);
+    C(k,2) = Cs(2,k);
+    C(k,3) = Cs(3,k);
+end
 
 % Upper bounds on thrust inputs and slack variables
-Umax = [0.2 0.2 0.2 10^10]';
+Umax = [6.8 1 1]';
 Umin = -Umax;
 sysD = ss(A,B,C,D);
 sysD = c2d(sysD,Ts);
+
+
 % Creating weighting matrices for cost function
-Q = 10^3.*eye(6); R = 100.*eye(4); 
-R(4,4) = 10^6;
+Q = 10^3.*eye(6); R = 100.*eye(3); 
 % Solving infinite horizon unconstrained LQR for stability enforcement
 [K,P,~] = lqrd(A,B(:,1:3),Q,R(1:3,1:3),Ts);
 
-n = 6; m = 4;
+n = 6; m = 3;
 utot = [];
 ytot = [];
 xtot = x0vec;
@@ -44,6 +55,7 @@ while norm(x0vec(1:2))>=(rp+rs)
     variables X(n,N+1) U(m,N)
     X(:,2:N+1) == sysD.a*X(:,1:N) + sysD.b*U;
     X(:,1) == x0vec;
+    max(C*X(:,1:Nc)) <= 0;
     max(U(1,:).^2 + U(2,:).^2 + U(3,:).^2) <= Umax(1)^2;
     
     % CVX returns that a portion of this is illegal ({convex}^.5), although

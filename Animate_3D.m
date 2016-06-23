@@ -1,7 +1,9 @@
-function coefficients = Plane_Gen(init, params, phi, nu)
-% Generates points on the target to intersect with constraint planes
-% The rotations consist of first CW rotation of nu about Nz, then the 
-
+function [] = Animate_3D(init, params, phi, nu, x, animate,filename)
+if animate
+v = VideoWriter(filename);
+v.FrameRate = 6;
+open(v);
+end
 gamma = params.gamma; rp = params.rp; 
 rp = 0.2; % [m] radius of target
 R1 = [cos(nu) sin(nu) 0; -sin(nu) cos(nu) 0; 0 0 1];
@@ -61,7 +63,8 @@ xlabel('X axis')
 ylabel('Y axis')
 zlabel('Z axis')
 
-view([90+nu*180/(2*pi) -phi*180/(2*pi)])
+%view([90+nu*180/(2*pi) -phi*180/(2*pi)])
+view([51 17])
 
 % Plot 8 planes to approximate the cone
 X = 8.*[0 0 0 0 0 0 0 0; pN(1) pNE(1) pE(1) pSE(1) pS(1) pSW(1) pW(1) pNW(1);
@@ -74,48 +77,26 @@ C = [0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5;
      1 1 1 1 1 1 1 1;
      0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3];
 h = fill3(X,Y,Z,C);
-%alpha(h, .5)
-
-% Compute normal vectors for each plane
-coefficients = zeros(3,8);
-coefficients(:,1) = cross(pN, pNE); coefficients(:,2) = cross(pNE, pE);
-coefficients(:,3) = cross(pE, pSE); coefficients(:,4) = cross(pSE, pS);
-coefficients(:,5) = cross(pS, pSW); coefficients(:,6) = cross(pSW, pW); 
-coefficients(:,7) = cross(pW, pNW); coefficients(:,8) = cross(pNW, pN);
+alpha(h, .5);
 
 
-% Check if should be greater than or less than 
-% Result: should be less than
+freeflyer = plot3(init(1),init(2),init(3),'ro','markersize',3);
+path = line(init(1),init(2),init(3),'color','b');
 
-x = linspace(0,1,20);
-y = linspace(-.2,.2,20);
-z = linspace(-.3,1,20);
-[X,Y,Z] = meshgrid(x,y,z);
-
-values1 = coefficients(1,1).*X + coefficients(2,1).*Y + coefficients(3,1).*Z;
-values2 = coefficients(1,2).*X + coefficients(2,2).*Y + coefficients(3,2).*Z;
-values3 = coefficients(1,3).*X + coefficients(2,3).*Y + coefficients(3,3).*Z;
-values4 = coefficients(1,4).*X + coefficients(2,4).*Y + coefficients(3,4).*Z;
-values5 = coefficients(1,5).*X + coefficients(2,5).*Y + coefficients(3,5).*Z;
-values6 = coefficients(1,6).*X + coefficients(2,6).*Y + coefficients(3,6).*Z;
-values7 = coefficients(1,7).*X + coefficients(2,7).*Y + coefficients(3,7).*Z;
-values8 = coefficients(1,8).*X + coefficients(2,8).*Y + coefficients(3,8).*Z;
-idx1 = find(values1>=0);
-idx2 = find(values2>=0);
-idx3 = find(values3>=0);
-idx4 = find(values4>=0);
-idx5 = find(values5>=0);
-idx6 = find(values6>=0);
-idx7 = find(values7>=0);
-idx8 = find(values8>=0);
-
-plot3(X(idx1),Y(idx1),Z(idx1),'ko','markersize',1)
-hold all
-plot3(X(idx2),Y(idx2),Z(idx2),'ko','markersize',1)
-plot3(X(idx3),Y(idx3),Z(idx3),'ko','markersize',1)
-plot3(X(idx4),Y(idx4),Z(idx4),'ko','markersize',1)
-plot3(X(idx5),Y(idx5),Z(idx5),'ko','markersize',1)
-plot3(X(idx6),Y(idx6),Z(idx6),'ko','markersize',1)
-plot3(X(idx7),Y(idx7),Z(idx7),'ko','markersize',1)
-plot3(X(idx8),Y(idx8),Z(idx8),'ko','markersize',1)
-
+frame = getframe;
+if animate
+writeVideo(v,frame);
+end
+for i=2:length(x)
+    set(freeflyer, 'XData', x(1,i), 'YData', x(2,i), 'ZData', x(3,i));
+    set(path,'XData',x(1,1:i),'YData',x(2,1:i), 'ZData',x(3,1:i));
+    drawnow  
+    pause(.1)
+    if animate
+    frame = getframe;
+    writeVideo(v,frame);
+    end
+end
+if animate
+close(v);
+end
