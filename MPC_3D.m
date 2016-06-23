@@ -5,7 +5,8 @@ function [xtot, utot] = MPC_3D(init,params,pred,CWH)
 % with angle nu, then rotate about the new x axis with angle phi. If CWH is
 % zero, there will be no use of CWH dynamics. If CWH is 1, CWH dynamics
 % will be taken into account and orbital parameters must be specified in
-% the params structure.
+% the params structure. Constraints are implemented as hard. MPC_3D_slack
+% and MPC_3D_cost for soft implementations of constraints
 
 % 6/20 First doing without any attitude control to avoid having to
 % linearize equations. Translation and rotation separate.
