@@ -1,10 +1,13 @@
-x0 =  5; y0 = 0; z0 = 5; vx0 = 0; vy0 = 1; vz0 = 1; nu = 0; phi = -pi/4;
-pred = 0;
+x0 =  10; y0 = 0; z0 = 10; vx0 = 0; vy0 = 1; vz0 = 1; 
+pred = 0; CWH = 1;
 init = [x0 y0 z0 vx0 vy0 vz0];
+params.nu = 0; params.phi = -pi/4;
+params.Ro = 850*10^3; % [m] orbital radius of target
+params.mu = 3.986004418*10^14; % [m^3/s^2] standard gravitational parameter of earth
 params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
 params.Ts = .2;
 params.N = 20; params.Nc = 10;
-[xtot, utot] = MPC_3D(init,params,phi,nu,pred);
+[xtot, utot] = MPC_3D(init,params,pred, CWH);
 %%
 x0 = 5; y0 = 2; theta0 =-.5; vx0 = 0; vy0 = 1; omega0 = 0; phi = .5; omegaD = 10*pi/180;
 init = [x0 y0 theta0 vx0 vy0 omega0];

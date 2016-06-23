@@ -1,9 +1,10 @@
-function [] = Animate_3D(init, params, phi, nu, x, animate,filename)
+function [] = Animate_3D(init, params, xtot, animate,filename)
 if animate
 v = VideoWriter(filename);
 v.FrameRate = 6;
 open(v);
 end
+phi = params.phi; nu = params.nu;
 gamma = params.gamma; rp = params.rp; 
 rp = 0.2; % [m] radius of target
 R1 = [cos(nu) sin(nu) 0; -sin(nu) cos(nu) 0; 0 0 1];
@@ -87,9 +88,9 @@ frame = getframe;
 if animate
 writeVideo(v,frame);
 end
-for i=2:length(x)
-    set(freeflyer, 'XData', x(1,i), 'YData', x(2,i), 'ZData', x(3,i));
-    set(path,'XData',x(1,1:i),'YData',x(2,1:i), 'ZData',x(3,1:i));
+for i=2:length(xtot)
+    set(freeflyer, 'XData', xtot(1,i), 'YData', xtot(2,i), 'ZData', xtot(3,i));
+    set(path,'XData',xtot(1,1:i),'YData',xtot(2,1:i), 'ZData',xtot(3,1:i));
     drawnow  
     pause(.1)
     if animate

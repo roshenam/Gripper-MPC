@@ -1,4 +1,6 @@
 function [xtot, utot,ytot] = MPC(init,params,phi)
+% 2D with cone constraint and all velocity constraints. Original used in
+% AA290 report
 
 % Extracting initial conditions and parameters from inputs
 x0 = init(1); y0 = init(2); theta0 = init(3); vx0 = init(4); vy0 = init(5);

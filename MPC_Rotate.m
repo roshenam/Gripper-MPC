@@ -1,4 +1,8 @@
 function [xtot, utot,ytot] = MPC_Rotate(init,params,phi,omega,pred)
+% 2D accounting for platforms that rotate with a constant speed. 
+
+% 6/23 Not implemented
+
 % If pred is zero, there will be no prediction of the LOS cone constraints
 % in the model. If pre is one, there will be prediction of the LOS cone
 % constraints
