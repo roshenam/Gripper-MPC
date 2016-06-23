@@ -9,19 +9,19 @@ function [xtot, utot] = MPC_3D(init,params,pred,CWH)
 
 % 6/20 First doing without any attitude control to avoid having to
 % linearize equations. Translation and rotation separate.
-% 6/23 Working on CWH dynamics implementation. 
+% 6/23 Finished CWH dynamics implementation.
 
 % Extracting initial conditions and parameters from inputs
-x0 = init(1); y0 = init(2); z0 = init(3);  
+x0 = init(1); y0 = init(2); z0 = init(3);
 vx0 = init(4); vy0 = init(5); vz0 = init(6);
 phi = params.phi; nu = params.nu;
 rp = params.rp; rs = params.rs;
-Ts = params.Ts;  
-N = params.N; Nc = params.Nc; 
+Ts = params.Ts;
+N = params.N; Nc = params.Nc;
 
 x0vec = [x0; y0; z0; vx0; vy0; vz0];
 
-% Creating dynamic system 
+% Creating dynamic system
 if CWH
     % Accounting for CWH dynamics
     mu = params.mu; Ro = params.Ro;
@@ -34,6 +34,7 @@ else
     A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1;
 end
 B = zeros(6,3); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
+
 C = zeros(8,6); D = zeros(8,3);
 
 % C is a matrix of the weights on the constrained outputs due to the 8
@@ -53,7 +54,7 @@ sysD = c2d(sysD,Ts);
 
 
 % Creating weighting matrices for cost function
-Q = 10^3.*eye(6); R = 100.*eye(3); 
+Q = 10^3.*eye(6); R = 100.*eye(3);
 % Solving infinite horizon unconstrained LQR for stability enforcement
 [K,P,~] = lqrd(A,B(:,1:3),Q,R(1:3,1:3),Ts);
 
@@ -75,11 +76,11 @@ while norm(x0vec(1:2))>=(rp+rs)
     % CVX returns that a portion of this is illegal ({convex}^.5), although
     % the whole thing is convex (cone shape) so not sure how to get around
     % this. For now, ditch this and go with linear approximations of the
-    % cone like in the paper. 
-%     max(pow_p((X(3,:).*sin(phi) + X(2,:).*cos(nu)*cos(phi) - X(1,:).*cos(phi)*sin(nu)).^2 +...
-%     (X(1,:).*cos(nu) + X(2,:).*sin(nu)).^2,0.5) - tan(beta).*(X(3,:).*cos(phi) -...
-%     X(2,:).*cos(nu)*sin(phi) + X(1,:).*sin(nu)*sin(phi)) + U(4,:)) <= 0;
-
+    % cone like in the paper.
+    %     max(pow_p((X(3,:).*sin(phi) + X(2,:).*cos(nu)*cos(phi) - X(1,:).*cos(phi)*sin(nu)).^2 +...
+    %     (X(1,:).*cos(nu) + X(2,:).*sin(nu)).^2,0.5) - tan(beta).*(X(3,:).*cos(phi) -...
+    %     X(2,:).*cos(nu)*sin(phi) + X(1,:).*sin(nu)*sin(phi)) + U(4,:)) <= 0;
+    
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') + X(:,N+1)'*P*X(:,N+1));
     cvx_end
     u = U(:,1);
@@ -93,6 +94,6 @@ while norm(x0vec(1:2))>=(rp+rs)
     utot = [utot u];
     %ytot = Y;
     % Updating constraints for velocity bounding
-   
+    
 end
 disp('Simulation Complete')
