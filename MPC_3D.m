@@ -1,24 +1,38 @@
-function [xtot, utot] = MPC_3D(init,params,phi,nu,pred)
+function [xtot, utot] = MPC_3D(init,params,pred,CWH)
 % If pred is zero, there will be no prediction of the LOS cone constraints
 % in the model. If pre is one, there will be prediction of the LOS cone
 % constraints. Rotation for docking port is first rotate about the z axis
-% with angle nu, then rotate about the new x axis with angle phi.
+% with angle nu, then rotate about the new x axis with angle phi. If CWH is
+% zero, there will be no use of CWH dynamics. If CWH is 1, CWH dynamics
+% will be taken into account and orbital parameters must be specified in
+% the params structure.
 
 % 6/20 First doing without any attitude control to avoid having to
 % linearize equations. Translation and rotation separate.
-% 6/22 
+% 6/23 Working on CWH dynamics implementation. 
 
 % Extracting initial conditions and parameters from inputs
 x0 = init(1); y0 = init(2); z0 = init(3);  
 vx0 = init(4); vy0 = init(5); vz0 = init(6);
-rp = params.rp; rs = params.rs; gamma = params.gamma;
+phi = params.phi; nu = params.nu;
+rp = params.rp; rs = params.rs;
 Ts = params.Ts;  
 N = params.N; Nc = params.Nc; 
 
 x0vec = [x0; y0; z0; vx0; vy0; vz0];
 
 % Creating dynamic system 
-A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1; 
+if CWH
+    % Accounting for CWH dynamics
+    mu = params.mu; Ro = params.Ro;
+    n = sqrt(mu/(Ro^3));
+    A = zeros(6,6); A(1:3,4:6) = eye(3);
+    A(4,1) = 3*n^2; A(4,5) = 2*n;
+    A(5,4) = -2*n; A(6,3) = -n^2;
+else
+    % Not accounting for CWH dynamics
+    A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1;
+end
 B = zeros(6,3); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
 C = zeros(8,6); D = zeros(8,3);
 
