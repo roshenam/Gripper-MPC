@@ -82,7 +82,7 @@ alpha(h, .5);
 
 
 freeflyer = plot3(init(1),init(2),init(3),'ro','markersize',3);
-path = line(init(1),init(2),init(3),'color','b');
+path = line(init(1),init(2),init(3),'color','b','linewidth',2);
 
 frame = getframe;
 if animate
