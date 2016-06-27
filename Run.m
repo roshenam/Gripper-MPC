@@ -1,3 +1,15 @@
+x0 =  10; y0 = 10; vx0 = 0; vy0 = 1;
+init = [x0 y0 vx0 vy0];
+phi = pi/4; omega = 20*pi/180;
+params.phi = phi;
+params.Ro = 850*10^3; % [m] orbital radius of target
+params.mu = 3.986004418*10^14; % [m^3/s^2] standard gravitational parameter of earth
+params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
+params.Umax = .2;
+params.Ts = .2;
+params.N = 20; params.Nc = 10;
+[xtot, utot,cost] = MPC_Rotate(init,params,phi,omega);
+%%
 x0 =  10; y0 = 0; z0 = 10; vx0 = 0; vy0 = 1; vz0 = 1; 
 pred = 0; CWH = 1;
 init = [x0 y0 z0 vx0 vy0 vz0];
