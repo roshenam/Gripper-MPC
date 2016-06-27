@@ -1,4 +1,4 @@
-function [xtot, utot,ytot] = MPC_Rotate(init,params,phi,omega)
+function [xtot, utot,cost] = MPC_Rotate(init,params,phi,omega)
 % 2D accounting for platforms that rotate with a constant speed. 
 
 % 6/23 Not implemented
@@ -60,6 +60,7 @@ n = 10; m = 4; p=2;
 utot = [];
 ytot = [];
 xtot = x0vec;
+cost = [];
 counter = 0;
 while norm(x0vec(1:2))>=(rp+rs)
     counter = counter + 1;
@@ -82,7 +83,8 @@ while norm(x0vec(1:2))>=(rp+rs)
     xtot = [xtot x0vec] ;
     utot = [utot u];
     Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end));
-    
+    currcost = cvx_optval;
+    cost = [cost; currcost];
    
 end
 disp('Simulation Complete')
