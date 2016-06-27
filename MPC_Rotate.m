@@ -36,7 +36,7 @@ Abig(7,1) = 1; Abig(7,5) = -1;
 Abig(8,2) = 1; Abig(8,6) = -1;
 Abig(9,9) = 2; Abig(9,10) = -1;
 Abig(10,9) = 1; 
-Bbig = zeros(10,4); Bbig(1:4,1:2) = sysD.b;
+Bbig = zeros(10,4); Bbig(1:4,1:4) = sysD.b;
 
 
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
@@ -49,13 +49,14 @@ Umax = params.Umax;
 Ymax = [1 1]';
 
 % Creating weighting matrices for cost function
-Q = zeros(10,10); Q(1:4,1:4) = 10^3.*eye(4); R = 10^2.*eye(2); 
+Q = zeros(10,10); Q(1:4,1:4) = 10^3.*eye(4); R = 10^2.*eye(4); 
+R(3,3) = 10^4; R(4,4) = 10^4;
 % Solving infinite horizon unconstrained LQR for stability enforcement
-[~,P,~] = lqrd(A,B,Q(1:4,1:4),R,Ts);
+[~,P,~] = lqrd(A,B(:,1:2),Q(1:4,1:4),R(1:2,1:2),Ts);
 Pbig = zeros(10,10);
 Pbig(1:4,1:4) = P;
 
-n = 10; m = 2; p=2; 
+n = 10; m = 4; p=2; 
 utot = [];
 ytot = [];
 xtot = x0vec;
@@ -63,7 +64,7 @@ counter = 0;
 while norm(x0vec(1:2))>=(rp+rs)
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
-    cvx_begin
+    cvx_begin quiet
     variables X(n,N+1) U(m,N) Y(p,N)
     X(:,2:N+1) == Abig*X(:,1:N) + Bbig*U;
     Y(:,1:N) == Cbig*X(:,1:N) + Dbig*U;
