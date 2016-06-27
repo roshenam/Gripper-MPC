@@ -20,6 +20,6 @@ C(1,1) = sin(phik+gamma)/((rp-rtol)*sin(gamma));
 C(1,2) = -cos(phik+gamma)/((rp-rtol)*sin(gamma));
 C(2,1) = -sin(phik-gamma)/((rp-rtol)*sin(gamma));
 C(2,2) = cos(phik-gamma)/((rp-rtol)*sin(gamma));
-C(1,10) = L2*xk+L1*yk;
-C(2,10) = -L4*xk-L3*yk;
+%C(1,10) = L2*xk+L1*yk;
+%C(2,10) = -L4*xk-L3*yk;
 
