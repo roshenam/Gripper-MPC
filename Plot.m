@@ -1,11 +1,28 @@
 %% simulate
 %Plot Path
-rp = params.rp; rtol = params.rtol;  rs = params.rs; gamma = params.gamma;
-Ts = params.Ts;
-eta = params.eta; etaR = params.etaR; beta1 = params.beta1; beta2 = params.beta2; 
-beta3 = params.beta3; beta4 = params.beta4; beta5 = params.beta5;
+
+x = linspace(-3,10);
+phi = params.phi; gamma = params.gamma; rp = params.rp; rtol = params.rtol;
+y1 = (sin(phi+gamma).*x./((rp-rtol)*sin(gamma))-1)./(cos(phi+gamma)/((rp-rtol)*sin(gamma)));
+y2 = (1+ sin(phi-gamma).*x./((rp-rtol)*sin(gamma)))./(cos(phi-gamma)/((rp-rtol)*sin(gamma)));
+y1end = (sin(xtot(end,end)+gamma).*x./((rp-rtol)*sin(gamma))-1)./(cos(xtot(end,end)+gamma)/((rp-rtol)*sin(gamma)));
+y2end = (1+ sin(xtot(end,end)-gamma).*x./((rp-rtol)*sin(gamma)))./(cos(xtot(end,end)-gamma)/((rp-rtol)*sin(gamma)));
+figure(1)
+plot(x,y1,'k','linewidth',2)
+hold all
+plot(x,y2,'k','linewidth',2)
+plot(x,y1end,'k--','linewidth',2)
+plot(x,y2end,'k--','linewidth',2)
+rectangle('Position',[-rp,-rp,2*rp,2*rp],'Curvature',[1,1])
+xlim([-1,6])
+ylim([-1,6])
+axis('square')
+rectangle('Position',[rp*cos(phi)-rp/20, rp*sin(phi)-rp/20,rp/10,rp/10],'Curvature',[1,1])
+
+% eta = params.eta; etaR = params.etaR; beta1 = params.beta1; beta2 = params.beta2; 
+% beta3 = params.beta3; beta4 = params.beta4; beta5 = params.beta5;
 N = params.N; Nc = params.Nc;
-figure(2)
+figure(1)
 viscircles([xtot(1,end) xtot(2,end)],params.rs,'linewidth',1,'color','g');
 viscircles([0 0],rp,'linewidth',1,'color','k');
 hold all
