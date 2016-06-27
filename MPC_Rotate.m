@@ -17,8 +17,8 @@ x0vec = [x0; y0; vx0; vy0; rp*cos(phi); rp*sin(phi); x0-rp*cos(phi);...
 
 % Creating dynamic system 
 A = zeros(4,4); A(1,3) = 1; A(2,4) = 1;
-B = zeros(4,2); B(3,1) = 1; B(4,2) = 1;
-C = zeros(4,4);  D = zeros(4,2);
+B = zeros(4,4); B(3,1) = 1; B(4,2) = 1;
+C = zeros(4,4);  D = zeros(4,4);
 sysD = ss(A,B,C,D);
 sysD = c2d(sysD,Ts);
 
@@ -36,12 +36,12 @@ Abig(7,1) = 1; Abig(7,5) = -1;
 Abig(8,2) = 1; Abig(8,6) = -1;
 Abig(9,9) = 2; Abig(9,10) = -1;
 Abig(10,9) = 1; 
-Bbig = zeros(10,2); Bbig(1:4,1:2) = sysD.b;
+Bbig = zeros(10,4); Bbig(1:4,1:2) = sysD.b;
 
 
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
-Dbig = zeros(2,2);
+Dbig = zeros(2,4); Dbig(1,3) = 1; Dbig(2,4) = 1; % Slack variables to make constraints soft
 Cbig = make_C(params, x0, y0, phi);
 
 % Upper bounds on thrust inputs and slack variables
@@ -77,7 +77,7 @@ while norm(x0vec(1:2))>=(rp+rs)
         disp(['Problem became infeasible at iteration ',num2str(counter)])
         break
     end
-    x0vec = sysD.a*x0vec+sysD.b*u;
+    x0vec = Abig*x0vec+Bbig*u;
     xtot = [xtot x0vec] ;
     utot = [utot u];
     Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end));
