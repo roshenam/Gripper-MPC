@@ -1,4 +1,4 @@
-function [xtot, utot,cost] = MPC_Rotate_slack(init,params,phi,omega)
+function [xtot, utot, cost, time] = MPC_Rotate_slack(init,params,phi,omega)
 % 2D accounting for platforms that rotate with a constant speed.
 % Implementing cone constraints as soft through use of slack variables.
 
@@ -45,14 +45,15 @@ Umax = params.Umax;
 Ymax = make_Ymax(params, x0, y0, phi);
 
 % Creating weighting matrices for cost function
-Q = zeros(6,6); Q(1:4,1:4) = 10^2.*eye(4); R = 10^3.*eye(4); 
-R(3,3) = 10^5; R(4,4) = 10^5;
+Q = zeros(6,6); Q(1:4,1:4) = params.Qval.*eye(4); R = params.Rval.*eye(4); 
+R(3,3) = params.slackweight; R(4,4) = params.slackweight;
 % Solving infinite horizon unconstrained LQR for stability enforcement
 [~,P,~] = lqrd(A,B(:,1:2),Q(1:4,1:4),R(1:2,1:2),Ts);
 Pbig = zeros(6,6);
 Pbig(1:4,1:4) = P;
 
 n = 6; m = 4; p=2; 
+time = [];
 utot = [];
 ytot = [];
 xtot = x0vec;
@@ -61,6 +62,7 @@ counter = 0;
 while norm(x0vec(1:2))>=(rp+rs)
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
+    tic
     cvx_begin quiet
     variables X(n,N+1) U(m,N) Y(p,N)
     X(:,2:N+1) == Abig*X(:,1:N) + Bbig*U;
@@ -70,12 +72,14 @@ while norm(x0vec(1:2))>=(rp+rs)
     max((U(1,:).^2 + U(2,:).^2)') <= Umax';
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') + X(:,N+1)'*Pbig*X(:,N+1));
     cvx_end
+    timecurr = toc;
     u = U(:,1);
     if isnan(u(1))
         disp(['Problem became infeasible at iteration ',num2str(counter)])
         break
     end
     x0vec = Abig*x0vec+Bbig*u;
+    time = [time timecurr];
     xtot = [xtot x0vec] ;
     utot = [utot u];
     Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end));
