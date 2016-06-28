@@ -8,7 +8,7 @@ v.FrameRate = 6;
 open(v);
 end
 xtot = xtot';
-xrange = linspace(-3,10);
+xrange = linspace(-4,10);
 rA = params.rp; rtol = params.rtol; rB = params.rs;
 gamma = params.gamma;
 phi = params.phi; x0 = xtot(1,1); y0 = xtot(1,2); theta0 = xtot(1,3);
@@ -16,9 +16,9 @@ h = figure('Units','Normalized','Position',[.2,.1,.6,.6]);
 hold all
 xpos = xtot(:,1); ypos = xtot(:,2); thetapos = xtot(:,3)+phi;
 viscircles([0,0],rA,'color','k','linewidth',1);
-dim = max([xtot(1,1),xtot(1,2)]);
-xlim([-2,dim+1])
-ylim([-2,dim+1])
+dim = max([max(xtot(:,1)),max(xtot(:,2))]);
+xlim([-4,dim+1])
+ylim([-4,dim+1])
 axis('square')
 viscircles([rA*cos(phi), rA*sin(phi)],rA/10,'color','k');
 y1 = (sin(phi+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(phi+gamma)/((rA-rtol)*sin(gamma)));
