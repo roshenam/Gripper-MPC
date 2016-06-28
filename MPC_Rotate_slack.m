@@ -1,5 +1,6 @@
 function [xtot, utot,cost] = MPC_Rotate_slack(init,params,phi,omega)
-% 2D accounting for platforms that rotate with a constant speed. 
+% 2D accounting for platforms that rotate with a constant speed.
+% Implementing cone constraints as soft through use of slack variables.
 
 % 6/23 Not implemented
 % 6/25 Removing angle control to deal with separately later. 
@@ -12,8 +13,7 @@ rp = params.rp; rs = params.rs;
 Ts = params.Ts; 
 N = params.N; Nc = params.Nc; 
 
-x0vec = [x0; y0; vx0; vy0; rp*cos(phi); rp*sin(phi); x0-rp*cos(phi);...
-    y0-rp*sin(phi); phi+omega*Ts; phi];
+x0vec = [x0; y0; vx0; vy0; phi+omega*Ts; phi];
 
 % Creating dynamic system 
 A = zeros(4,4); A(1,3) = 1; A(2,4) = 1;
@@ -29,14 +29,10 @@ sysD = c2d(sysD,Ts);
 % predict the future state of the LOS cone constraints. State vector is now
 % [x y x' y' rx ry sigx sigy z1 z2]
 
-Abig = zeros(10,10); Abig(1:4,1:4) = sysD.a; 
-Abig(5,5) = cos(omega*Ts); Abig(5,6) = -sin(omega*Ts);
-Abig(6,5) = sin(omega*Ts); Abig(6,6) = cos(omega*Ts);
-Abig(7,1) = 1; Abig(7,5) = -1;
-Abig(8,2) = 1; Abig(8,6) = -1;
-Abig(9,9) = 2; Abig(9,10) = -1;
-Abig(10,9) = 1; 
-Bbig = zeros(10,4); Bbig(1:4,1:4) = sysD.b;
+Abig = zeros(6,6); Abig(1:4,1:4) = sysD.a; 
+Abig(5,5) = 2; Abig(5,6) = -1;
+Abig(6,5) = 1; 
+Bbig = zeros(6,4); Bbig(1:4,1:4) = sysD.b;
 
 
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
@@ -46,17 +42,17 @@ Cbig = make_C(params, x0, y0, phi);
 
 % Upper bounds on thrust inputs and slack variables
 Umax = params.Umax;
-Ymax = [1 1]';
+Ymax = make_Ymax(params, x0, y0, phi);
 
 % Creating weighting matrices for cost function
-Q = zeros(10,10); Q(1:4,1:4) = 10^3.*eye(4); R = 10^2.*eye(4); 
-R(3,3) = 10^4; R(4,4) = 10^4;
+Q = zeros(6,6); Q(1:4,1:4) = 10^2.*eye(4); R = 10^3.*eye(4); 
+R(3,3) = 10^5; R(4,4) = 10^5;
 % Solving infinite horizon unconstrained LQR for stability enforcement
 [~,P,~] = lqrd(A,B(:,1:2),Q(1:4,1:4),R(1:2,1:2),Ts);
-Pbig = zeros(10,10);
+Pbig = zeros(6,6);
 Pbig(1:4,1:4) = P;
 
-n = 10; m = 4; p=2; 
+n = 6; m = 4; p=2; 
 utot = [];
 ytot = [];
 xtot = x0vec;
@@ -83,6 +79,7 @@ while norm(x0vec(1:2))>=(rp+rs)
     xtot = [xtot x0vec] ;
     utot = [utot u];
     Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end));
+    Ymax = make_Ymax(params, x0vec(1), x0vec(2), x0vec(end));
     currcost = cvx_optval;
     cost = [cost; currcost];
    
