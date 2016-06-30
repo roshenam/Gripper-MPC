@@ -43,7 +43,7 @@ Bbig = zeros(10,2); Bbig(1:4,1:2) = sysD.b;
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
 Dbig = zeros(2,2);
-Cbig = make_C(params, x0, y0, phi);
+Cbig = make_C(params, x0, y0, phi,0);
 
 % Upper bounds on thrust inputs and slack variables
 Umax = params.Umax;
@@ -62,8 +62,8 @@ ytot = [];
 xtot = x0vec;
 cost = [];
 counter = 0;
-%while norm(x0vec(1:2))>=(rp+rs)
-for i=1:20
+while norm(x0vec(1:2))>=(rp+rs)
+%for i=1:20
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     cvx_begin quiet
@@ -84,7 +84,7 @@ for i=1:20
     x0vec = Abig*x0vec+Bbig*u;
     xtot = [xtot x0vec] ;
     utot = [utot u];
-    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end));
+    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end),0);
     currcost = cvx_optval;
     cost = [cost; currcost];
    
