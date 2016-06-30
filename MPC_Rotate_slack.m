@@ -8,17 +8,18 @@ function [xtot, utot, cost, time] = MPC_Rotate_slack(init,params,phi,omega)
 % rotating point.
 
 % Extracting initial conditions and parameters from inputs
-x0 = init(1); y0 = init(2); vx0 = init(3); vy0 = init(4);
+x0 = init(1); y0 = init(2); theta0 = init(3); 
+vx0 = init(4); vy0 = init(5); thetadot0 = init(6);
 rp = params.rp; rs = params.rs; 
 Ts = params.Ts; 
 N = params.N; Nc = params.Nc; 
 
-x0vec = [x0; y0; vx0; vy0; phi+omega*Ts; phi];
+x0vec = [x0; y0; theta0-phi; vx0; vy0; thetadot0; phi+omega*Ts; phi];
 
 % Creating dynamic system 
-A = zeros(4,4); A(1,3) = 1; A(2,4) = 1;
-B = zeros(4,4); B(3,1) = 1; B(4,2) = 1;
-C = zeros(4,4);  D = zeros(4,4);
+A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1;
+B = zeros(6,5); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
+C = zeros(6,6);  D = zeros(6,5);
 sysD = ss(A,B,C,D);
 sysD = c2d(sysD,Ts);
 
@@ -27,39 +28,40 @@ sysD = c2d(sysD,Ts);
 % point), and sigx and sigy (the x and y distance between the selected
 % point and the center of mass of the spacecraft). Also adding states to
 % predict the future state of the LOS cone constraints. State vector is now
-% [x y x' y' rx ry sigx sigy z1 z2]
+% [x y theta x' y' theta' z1 z2]
 
-Abig = zeros(6,6); Abig(1:4,1:4) = sysD.a; 
-Abig(5,5) = 2; Abig(5,6) = -1;
-Abig(6,5) = 1; 
-Bbig = zeros(6,4); Bbig(1:4,1:4) = sysD.b;
+Abig = zeros(8,8); Abig(1:6,1:6) = sysD.a; 
+Abig(7,7) = 2; Abig(7,8) = -1;
+Abig(8,7) = 1; 
+Bbig = zeros(8,5); Bbig(1:6,1:5) = sysD.b;
 
 
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
-Dbig = zeros(2,4); Dbig(1,3) = 1; Dbig(2,4) = 1; % Slack variables to make constraints soft
-Cbig = make_C(params, x0, y0, phi);
+Dbig = zeros(2,5); Dbig(1,4) = 1; Dbig(2,5) = 1; % Slack variables to make constraints soft
+Cbig = make_C(params, x0, y0, phi,1);
 
 % Upper bounds on thrust inputs and slack variables
 Umax = params.Umax;
 Ymax = make_Ymax(params, x0, y0, phi);
 
 % Creating weighting matrices for cost function
-Q = zeros(6,6); Q(1:4,1:4) = params.Qval.*eye(4); R = params.Rval.*eye(4); 
-R(3,3) = params.slackweight; R(4,4) = params.slackweight;
+Q = zeros(8,8); Q(1:6,1:6) = params.Qval.*eye(6); R = params.Rval.*eye(5); 
+R(4,4) = params.slackweight; R(5,5) = params.slackweight;
 % Solving infinite horizon unconstrained LQR for stability enforcement
-[~,P,~] = lqrd(A,B(:,1:2),Q(1:4,1:4),R(1:2,1:2),Ts);
-Pbig = zeros(6,6);
-Pbig(1:4,1:4) = P;
+[~,P,~] = lqrd(A,B(:,1:3),Q(1:6,1:6),R(1:3,1:3),Ts);
+Pbig = zeros(8,8);
+Pbig(1:6,1:6) = P;
 
-n = 6; m = 4; p=2; 
+n = 8; m = 5; p=2; 
 time = [];
 utot = [];
 ytot = [];
 xtot = x0vec;
 cost = [];
 counter = 0;
-while norm(x0vec(1:2))>=(rp+rs)
+%while norm(x0vec(1:2))>=(rp+rs)
+for j=1:60
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     tic
@@ -82,7 +84,7 @@ while norm(x0vec(1:2))>=(rp+rs)
     time = [time timecurr];
     xtot = [xtot x0vec] ;
     utot = [utot u];
-    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end));
+    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end),1);
     Ymax = make_Ymax(params, x0vec(1), x0vec(2), x0vec(end));
     currcost = cvx_optval;
     cost = [cost; currcost];
