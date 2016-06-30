@@ -14,11 +14,11 @@ rp = params.rp; rs = params.rs;
 Ts = params.Ts; 
 N = params.N; Nc = params.Nc; 
 
-x0vec = [x0; y0; theta0-phi; vx0; vy0; thetadot0; phi+omega*Ts; phi];
+x0vec = [x0; y0; vx0; vy0; phi+omega*Ts; phi; theta0; thetadot0];
 
-% Creating dynamic system 
-A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1;
-B = zeros(6,5); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
+% Creating dynamic system
+A = zeros(6,6); A(1,3) = 1; A(2,4) = 1; A(5,6) = 1;
+B = zeros(6,5); B(3,1) = 1; B(4,2) = 1; B(6,3) = 1;
 C = zeros(6,6);  D = zeros(6,5);
 sysD = ss(A,B,C,D);
 sysD = c2d(sysD,Ts);
@@ -28,30 +28,31 @@ sysD = c2d(sysD,Ts);
 % point), and sigx and sigy (the x and y distance between the selected
 % point and the center of mass of the spacecraft). Also adding states to
 % predict the future state of the LOS cone constraints. State vector is now
-% [x y theta x' y' theta' z1 z2]
-
-Abig = zeros(8,8); Abig(1:6,1:6) = sysD.a; 
-Abig(7,7) = 2; Abig(7,8) = -1;
-Abig(8,7) = 1; 
-Bbig = zeros(8,5); Bbig(1:6,1:5) = sysD.b;
+% [x y x' y' z1 z2 theta theta']
+Abig = zeros(8,8); Abig(1:4,1:4) = sysD.a(1:4,1:4); 
+Abig(5,5) = 2; Abig(5,6) = -1; Abig(6,5) = 1;
+Abig(7:8,7:8) = sysD.a(5:6,5:6);
+Bbig = zeros(8,5); Bbig(1:4,1:5) = sysD.b(1:4,1:5);
+Bbig(7:8,1:5) = sysD.b(5:6,1:5);
 
 
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
 Dbig = zeros(2,5); Dbig(1,4) = 1; Dbig(2,5) = 1; % Slack variables to make constraints soft
-Cbig = make_C(params, x0, y0, phi,1);
+Cbig = make_C(params, x0, y0, phi, 1);
 
 % Upper bounds on thrust inputs and slack variables
 Umax = params.Umax;
+Tmax = params.Tmax; % max torque applied by flywheel
 Ymax = make_Ymax(params, x0, y0, phi);
 
 % Creating weighting matrices for cost function
-Q = zeros(8,8); Q(1:6,1:6) = params.Qval.*eye(6); R = params.Rval.*eye(5); 
+Q = zeros(8,8); Q(1:4,1:4) = params.Qval.*eye(4); R = params.Rval.*eye(5); 
 R(4,4) = params.slackweight; R(5,5) = params.slackweight;
 % Solving infinite horizon unconstrained LQR for stability enforcement
-[~,P,~] = lqrd(A,B(:,1:3),Q(1:6,1:6),R(1:3,1:3),Ts);
+[~,P,~] = lqrd(A(1:4,1:4),B(1:4,1:2),Q(1:4,1:4),R(1:2,1:2),Ts);
 Pbig = zeros(8,8);
-Pbig(1:6,1:6) = P;
+Pbig(1:4,1:4) = P;
 
 n = 8; m = 5; p=2; 
 time = [];
@@ -60,8 +61,14 @@ ytot = [];
 xtot = x0vec;
 cost = [];
 counter = 0;
-%while norm(x0vec(1:2))>=(rp+rs)
-for j=1:60
+Xr = zeros(2,N+1);
+Xr(2,:) = ones.*omega;
+for k=1:N+1
+Xr(1,k) = phi + k*Ts*omega;
+end
+Mtrack = [10000 0; 100 0];
+while norm(x0vec(1:2))>=(rp+rs)
+%for j=1:50
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     tic
@@ -72,7 +79,11 @@ for j=1:60
     X(:,1) == x0vec;
     max(Y(:,1:Nc)') <= Ymax';
     max((U(1,:).^2 + U(2,:).^2)') <= Umax';
-    minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') + X(:,N+1)'*Pbig*X(:,N+1));
+    max(U(3,:)') <= Tmax;
+    min(U(3,:)') >= -Tmax;
+    max(X(7,:)') <= x0vec(6)+N*Ts*omega;
+    minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') +...
+        X(:,N+1)'*Pbig*X(:,N+1) + norm(Mtrack*(X(7:8,:)-Xr),'fro'));
     cvx_end
     timecurr = toc;
     u = U(:,1);
@@ -84,10 +95,11 @@ for j=1:60
     time = [time timecurr];
     xtot = [xtot x0vec] ;
     utot = [utot u];
-    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end),1);
-    Ymax = make_Ymax(params, x0vec(1), x0vec(2), x0vec(end));
+    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(6),1);
+    Ymax = make_Ymax(params, x0vec(1), x0vec(2), x0vec(6));
     currcost = cvx_optval;
     cost = [cost; currcost];
+    Xr = Xr + Ts*omega;
    
 end
 disp('Simulation Complete')
