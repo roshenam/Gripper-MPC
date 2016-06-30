@@ -1,15 +1,17 @@
-x0 =  3; y0 = 3; vx0 = 0; vy0 = 2;
-init = [x0 y0 vx0 vy0];
+x0 =  3; y0 = 3; theta0 = -pi/4; vx0 = 0; vy0 = 2; thetadot0 = 0;
+init = [x0 y0 theta0 vx0 vy0 thetadot0];
 phi = pi/4; omega = 5*pi/180;
 params.phi = phi;
 params.Ro = 850*10^3; % [m] orbital radius of target
 params.mu = 3.986004418*10^14; % [m^3/s^2] standard gravitational parameter of earth
 params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
 params.Umax = .2;
+params.Tmax = 1;
 params.Ts = .2;
 params.N = 15; params.Nc = 5;
 params.Qval = 10^3; params.Rval = 10^5; params.slackweight = 10^5;
-[xtot, utot, cost,time] = MPC_Rotate_slack(init,params,phi,omega);
+[xtot, utot, cost,~] = MPC_Rotate_slack(init,params,phi,omega);
+
 %%
 x0 =  10; y0 = 0; z0 = 10; vx0 = 0; vy0 = 1; vz0 = 1; 
 pred = 0; CWH = 1;

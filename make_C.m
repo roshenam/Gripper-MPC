@@ -1,8 +1,9 @@
-function C = make_C(params, xk, yk, phik,slack)
+function C = make_C(params, xk, yk, phik, slack)
 
 rp = params.rp; rtol = params.rtol; gamma = params.gamma;
+
 if slack
-    C = zeros(2,6);
+    C = zeros(2,8);
     L1 = sin(phik+gamma)/((rp-rtol)*sin(gamma));
     L2 = cos(phik+gamma)/((rp-rtol)*sin(gamma));
     L3 = sin(phik-gamma)/((rp-rtol)*sin(gamma));
