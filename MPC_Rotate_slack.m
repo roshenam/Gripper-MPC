@@ -38,7 +38,7 @@ Bbig = zeros(6,4); Bbig(1:4,1:4) = sysD.b;
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
 Dbig = zeros(2,4); Dbig(1,3) = 1; Dbig(2,4) = 1; % Slack variables to make constraints soft
-Cbig = make_C(params, x0, y0, phi);
+Cbig = make_C(params, x0, y0, phi,1);
 
 % Upper bounds on thrust inputs and slack variables
 Umax = params.Umax;
@@ -60,6 +60,7 @@ xtot = x0vec;
 cost = [];
 counter = 0;
 while norm(x0vec(1:2))>=(rp+rs)
+%for j=1:100
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     tic
@@ -82,7 +83,7 @@ while norm(x0vec(1:2))>=(rp+rs)
     time = [time timecurr];
     xtot = [xtot x0vec] ;
     utot = [utot u];
-    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end));
+    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(end),1);
     Ymax = make_Ymax(params, x0vec(1), x0vec(2), x0vec(end));
     currcost = cvx_optval;
     cost = [cost; currcost];
