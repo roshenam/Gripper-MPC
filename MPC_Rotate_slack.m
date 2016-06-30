@@ -1,4 +1,4 @@
-function [xtot, utot, cost, time] = MPC_Rotate_slack(init,params,phi,omega)
+function [xtot, utot, cost, time, ytot] = MPC_Rotate_slack(init,params,phi,omega)
 % 2D accounting for platforms that rotate with a constant speed.
 % Implementing cone constraints as soft through use of slack variables.
 
@@ -18,8 +18,8 @@ x0vec = [x0; y0; vx0; vy0; phi+omega*Ts; phi; theta0; thetadot0];
 
 % Creating dynamic system
 A = zeros(6,6); A(1,3) = 1; A(2,4) = 1; A(5,6) = 1;
-B = zeros(6,5); B(3,1) = 1; B(4,2) = 1; B(6,3) = 1;
-C = zeros(6,6);  D = zeros(6,5);
+B = zeros(6,7); B(3,1) = 1; B(4,2) = 1; B(6,3) = 1;
+C = zeros(6,6);  D = zeros(6,7);
 sysD = ss(A,B,C,D);
 sysD = c2d(sysD,Ts);
 
@@ -32,34 +32,36 @@ sysD = c2d(sysD,Ts);
 Abig = zeros(8,8); Abig(1:4,1:4) = sysD.a(1:4,1:4); 
 Abig(5,5) = 2; Abig(5,6) = -1; Abig(6,5) = 1;
 Abig(7:8,7:8) = sysD.a(5:6,5:6);
-Bbig = zeros(8,5); Bbig(1:4,1:5) = sysD.b(1:4,1:5);
+Bbig = zeros(8,7); Bbig(1:4,1:5) = sysD.b(1:4,1:5);
 Bbig(7:8,1:5) = sysD.b(5:6,1:5);
 
 
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
 
-Dbig = zeros(2,5); Dbig(1,4) = 1; Dbig(2,5) = 1; % Slack variables to make constraints soft
-Cbig = make_C(params, x0, y0, phi, 1);
+Dbig = zeros(4,7); Dbig(1,4) = 1; Dbig(2,5) = 1; % Slack variables to make constraints soft
+Dbig(3,6) = 1; Dbig(4,7) = 1;
+Cbig = make_C(params, x0vec, 1);
 
 
 % Upper bounds on thrust inputs and slack variables
 Umax = params.Umax;
 Tmax = params.Tmax; % max torque applied by flywheel
-Ymax = make_Ymax(params, x0, y0, phi);
+Ymax = make_Ymax(params, x0vec);
 
 % Creating weighting matrices for cost function
-Q = zeros(8,8); Q(1:4,1:4) = params.Qval.*eye(4); R = params.Rval.*eye(5); 
-R(4,4) = params.slackweight; R(5,5) = params.slackweight;
+Q = zeros(8,8); Q(1:4,1:4) = params.Qval.*eye(4); R = params.Rval.*eye(7); 
+R(4,4) = params.slackweight; R(5,5) = params.slackweight; 
+R(6,6) = params.slackweight; R(7,7) = params.slackweight;
 % Solving infinite horizon unconstrained LQR for stability enforcement
 [~,P,~] = lqrd(A(1:4,1:4),B(1:4,1:2),Q(1:4,1:4),R(1:2,1:2),Ts);
 Pbig = zeros(8,8);
 Pbig(1:4,1:4) = P;
 
-n = 8; m = 5; p=2; 
+n = 8; m = 7; p=4; 
 time = [];
 utot = [];
-ytot = [];
+ytot = [Ymax];
 xtot = x0vec;
 cost = [];
 counter = 0;
@@ -69,7 +71,8 @@ for k=1:N+1
 Xr(1,k) = phi + k*Ts*omega;
 end
 Mtrack = [10000 0; 100 0];
-while norm(x0vec(1:2))>=(rp+rs)
+%while norm(x0vec(1:2))>=(rp+rs)
+for j=1:50
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     tic
@@ -82,7 +85,11 @@ while norm(x0vec(1:2))>=(rp+rs)
     max((U(1,:).^2 + U(2,:).^2)') <= Umax';
     max(U(3,:)') <= Tmax;
     min(U(3,:)') >= -Tmax;
+    if (phi-theta0)>0
     max(X(7,:)') <= x0vec(6)+N*Ts*omega;
+    else
+        min(X(7,:)') >= x0vec(6)-N*Ts*omega;
+    end
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') +...
         X(:,N+1)'*Pbig*X(:,N+1) + norm(Mtrack*(X(7:8,:)-Xr),'fro'));
     cvx_end
@@ -96,8 +103,9 @@ while norm(x0vec(1:2))>=(rp+rs)
     time = [time timecurr];
     xtot = [xtot x0vec] ;
     utot = [utot u];
-    Cbig = make_C(params, x0vec(1), x0vec(2), x0vec(6),1);
-    Ymax = make_Ymax(params, x0vec(1), x0vec(2), x0vec(6));
+    Cbig = make_C(params, x0vec, 1);
+    Ymax = make_Ymax(params, x0vec);
+    ytot = [ytot Ymax];
     currcost = cvx_optval;
     cost = [cost; currcost];
     Xr = Xr + Ts*omega;
