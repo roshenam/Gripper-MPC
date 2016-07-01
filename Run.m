@@ -1,4 +1,4 @@
-x0 =  3; y0 = 3; theta0 = pi/2; vx0 = 0; vy0 = 1; thetadot0 = 0;
+x0 =  3; y0 = 3; theta0 = -pi/4; vx0 = 1; vy0 = 1.5; thetadot0 = -20*pi/180;
 init = [x0 y0 theta0 vx0 vy0 thetadot0];
 phi = pi/4; omega = 5*pi/180;
 params.phi = phi;
@@ -9,7 +9,7 @@ params.Umax = .2;
 params.Tmax = 1;
 params.Ts = .2;
 params.N = 30; params.Nc = 15;
-params.Qval = 10^6; params.Rval = 10^2; params.slackweight = 10^8;
+params.Qval = 10^5; params.Rval = 10^2; params.slackweight = 10^8;
 params.eta = 1; params.betaHIGH = 1.5; params.betaLOW = 0.2;
 [xtot, utot, cost, time, ytot] = MPC_Rotate_nonI(init,params,phi,omega);
 

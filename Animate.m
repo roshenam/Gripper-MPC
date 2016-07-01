@@ -12,10 +12,16 @@ xtot = xtot';
 xrange = linspace(-4,10);
 rA = params.rp; rtol = params.rtol; rB = params.rs;
 gamma = params.gamma;
-phi = params.phi; x0 = xtot(1,1); y0 = xtot(1,2); theta0 = xtot(1,7);
+phi = params.phi; x0 = xtot(1,1); y0 = xtot(1,2); 
+if attitude
+theta0 = xtot(1,3);
+end
 h = figure('Units','Normalized','Position',[.2,.1,.6,.6]);
 hold all
-xpos = xtot(:,1); ypos = xtot(:,2); thetapos = xtot(:,7);
+xpos = xtot(:,1); ypos = xtot(:,2); 
+if attitude
+thetapos = xtot(:,3);
+end
 viscircles([0,0],rA,'color','k','linewidth',1);
 dim = max([max(xtot(:,1)),max(xtot(:,2))]);
 xlim([-4,dim+1])
@@ -46,10 +52,10 @@ for i=2:length(xtot)
     end
     set(path,'XData',xtot(1:i,1),'YData',xtot(1:i,2))
     if rotate
-        set(cone1,'YData',(sin(xtot(i,6)+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(xtot(i,6)+gamma)/((rA-rtol)*sin(gamma))));
-        set(cone2,'Ydata',(1+ sin(xtot(i,6)-gamma).*xrange./((rA-rtol)*sin(gamma)))./(cos(xtot(i,6)-gamma)/((rA-rtol)*sin(gamma))));
+        set(cone1,'YData',(sin(xtot(i,7)+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(xtot(i,7)+gamma)/((rA-rtol)*sin(gamma))));
+        set(cone2,'Ydata',(1+ sin(xtot(i,7)-gamma).*xrange./((rA-rtol)*sin(gamma)))./(cos(xtot(i,7)-gamma)/((rA-rtol)*sin(gamma))));
     end
-    set(port,'Position',[rA*cos(xtot(i,6))-rA/2, rA*sin(xtot(i,6))-rA/2,rA,rA])
+    set(port,'Position',[rA*cos(xtot(i,7))-rA/2, rA*sin(xtot(i,7))-rA/2,rA,rA])
     drawnow  
     pause(.1)
     if animate
