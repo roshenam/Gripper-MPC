@@ -18,8 +18,8 @@ x0vec = [x0; y0; nu0; vx0; vy0; nu0dot; phi+omega*Ts; phi];
 
 % Creating dynamic system
 A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1;
-B = zeros(6,5); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
-C = zeros(6,6);  D = zeros(6,5);
+B = zeros(6,7); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
+C = zeros(6,6);  D = zeros(6,7);
 sysD = ss(A,B,C,D);
 sysD = c2d(sysD,Ts);
 
@@ -31,7 +31,7 @@ sysD = c2d(sysD,Ts);
 % [x y x' y' theta theta' z1 z2 t]
 Abig = zeros(8,8); Abig(1:6,1:6) = sysD.a; 
 Abig(7,7) = 2; Abig(7,8) = -1; Abig(8,7) = 1;
-Bbig = zeros(8,5); Bbig(1:6,1:3) = sysD.b(1:6,1:3);
+Bbig = zeros(8,7); Bbig(1:6,1:3) = sysD.b(1:6,1:3);
 
 
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
@@ -39,7 +39,8 @@ Bbig = zeros(8,5); Bbig(1:6,1:3) = sysD.b(1:6,1:3);
 
 %Dbig = zeros(4,7); Dbig(1,4) = 1; Dbig(2,5) = 1; % Slack variables to make constraints soft
 %Dbig(3,6) = 1; Dbig(4,7) = 1;
-Dbig = zeros(2,5); Dbig(1,4) = 1; Dbig(2,5) = 1;
+Dbig = zeros(4,7); Dbig(1,4) = 1; Dbig(2,5) = 1; 
+%Dbig(3,6) = 1; Dbig(4,7) = 1;
 Cbig = make_C(params, x0vec, 1);
 
 
@@ -49,15 +50,15 @@ Tmax = params.Tmax; % max torque applied by flywheel
 Ymax = make_Ymax(params, x0vec);
 
 % Creating weighting matrices for cost function
-Q = params.Qval.*eye(8); Q(7,7) = 0; Q(8,8) = 0; R = params.Rval.*eye(5); 
-R(4,4) = params.slackweight; R(5,5) = params.slackweight; 
-%R(6,6) = params.slackweight; R(7,7) = params.slackweight;
+Q = params.Qval.*eye(8); Q(7,7) = 0; Q(8,8) = 0; R = params.Rval.*eye(7); 
+R(4,4) = params.slackweight; R(5,5) = params.slackweight;
+R(6,6) = params.slackweight; R(7,7) = params.slackweight;
 % Solving infinite horizon unconstrained LQR for stability enforcement
 [~,P,~] = lqrd(A,B(1:6,1:3),Q(1:6,1:6),R(1:3,1:3),Ts);
 Pbig = zeros(8,8);
 Pbig(1:6,1:6) = P;
 
-n = 8; m = 5; p=2; 
+n = 8; m = 7; p=4; 
 time = [];
 utot = [];
 ytot = [Ymax];
@@ -117,4 +118,8 @@ while norm(x0vec(1:2))>=(rp+rs)
 end
 xtot(3,:) = xtot(3,:) + xtot(8,:);
 xtot(6,:) = xtot(6,:) + omega;
+xtot(9,:) = abs(xtot(1,:)-(rp+rs).*cos(xtot(8,:)))+abs(xtot(2,:)-...
+    (rp+rs).*sin(xtot(8,:)));
+xtot(10,:) = -(xtot(4,:).*cos(xtot(3,:))+xtot(5,:).*sin(xtot(3,:)));
+
 disp('Simulation Complete')

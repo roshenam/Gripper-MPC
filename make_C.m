@@ -4,8 +4,8 @@ rp = params.rp; rtol = params.rtol; gamma = params.gamma;
 xk = x0vec(1); yk = x0vec(2); 
 phik = x0vec(8); thetak = x0vec(3)+x0vec(8); 
 if slack
-    %C = zeros(4,8);
-    C = zeros(2,8);
+    C = zeros(4,8);
+    %C = zeros(2,8);
     L1 = sin(phik+gamma)/((rp-rtol)*sin(gamma));
     L2 = cos(phik+gamma)/((rp-rtol)*sin(gamma));
     L3 = sin(phik-gamma)/((rp-rtol)*sin(gamma));
@@ -20,10 +20,10 @@ if slack
     C(2,8) = -L4*xk-L3*yk;
     
     % Normal velocity constraints
-    %C(3,4) = cos(thetak); 
-    %C(3,5) = sin(thetak); 
-    %C(4,4) = -C(3,4);
-    %C(4,5) = -C(3,5);
+    C(3,4) = -cos(thetak); 
+    C(3,5) = -sin(thetak); 
+    C(4,4) = -C(3,4);
+    C(4,5) = -C(3,5);
 
     
 else

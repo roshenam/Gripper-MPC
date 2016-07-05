@@ -6,7 +6,7 @@ params.omega = omega;
 params.Ro = 850*10^3; % [m] orbital radius of target
 params.mu = 3.986004418*10^14; % [m^3/s^2] standard gravitational parameter of earth
 params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
-params.Umax = 2;
+params.Umax = .2;
 params.Tmax = 1;
 params.Ts = .2;
 params.N = 30; params.Nc = 15;
@@ -15,9 +15,9 @@ params.eta = 1; params.betaHIGH = 1.5; params.betaLOW = 0.2;
 [xtot, utot, cost, time, ytot] = MPC_Rotate_nonI(init,params,phi,omega);
 
 %%
-x0 =  3; y0 = 3; theta0 = -pi/4; vx0 = .5; vy0 = .5; thetadot0 = 0;
+x0 =  3; y0 = 3; theta0 = -pi/4; vx0 = -.5; vy0 = 1.5; thetadot0 = -20*pi/180;
 init = [x0 y0 theta0 vx0 vy0 thetadot0];
-phi = pi/4; omega = 2*pi/180;
+phi = pi/4; omega = 8*pi/180;
 params.phi = phi;
 params.Ro = 850*10^3; % [m] orbital radius of target
 params.mu = 3.986004418*10^14; % [m^3/s^2] standard gravitational parameter of earth
@@ -26,9 +26,10 @@ params.Umax = .2;
 params.Tmax = 1;
 params.Ts = .2;
 params.N = 15; params.Nc = 5;
-params.Qval = 10^5; params.Rval = 10^5; params.slackweight = 10^8;
+params.Qval = 10^2; params.Rval = 10^2; params.slackweight = 10^3;
 %params.Qval = 10^5; params.Rval = 10^2; params.slackweight = 10^8;
-params.eta = 1; params.betaHIGH = 1.5; params.betaLOW = 0.2;
+params.eta = .5; params.betaHIGH = 1.5; params.betaLOW = 0.2;
+%params.betaHIGH = 100; params.betaLOW = -100; 
 [xtot, utot, cost, time, ytot] = MPC_Rotate_slack(init,params,phi,omega);
 
 %%
