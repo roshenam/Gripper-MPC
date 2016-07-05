@@ -120,6 +120,6 @@ xtot(3,:) = xtot(3,:) + xtot(8,:);
 xtot(6,:) = xtot(6,:) + omega;
 xtot(9,:) = abs(xtot(1,:)-(rp+rs).*cos(xtot(8,:)))+abs(xtot(2,:)-...
     (rp+rs).*sin(xtot(8,:)));
-xtot(10,:) = -(xtot(4,:).*cos(xtot(3,:))+xtot(5,:).*sin(xtot(3,:)));
+xtot(10,:) = -(xtot(4,:).*cos(xtot(8,:))+xtot(5,:).*sin(xtot(8,:)));
 
 disp('Simulation Complete')
