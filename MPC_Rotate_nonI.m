@@ -70,8 +70,8 @@ xtot = x0vec;
 cost = [];
 counter = 0;
 system = LTISystem('A',Abig(1:6,1:6),'B',Bbig(1:6,1:3),'C',Cbig(:,1:6),'D',Dbig(:,1:3));
-system.u.min = [-.2; -.2; -.2];
-system.u.max = [.2; .2; .2];
+system.u.min = [-Umax; -Umax; -Umax];
+system.u.max = [Umax; Umax; Umax];
 system.y.max = [0; 0];
 %InvSet = system.invariantSet();
 %pause

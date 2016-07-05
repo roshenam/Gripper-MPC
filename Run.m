@@ -2,11 +2,11 @@ x0 =  3; y0 = 3; theta0 = -pi/4; vx0 = 1; vy0 = 1.5; thetadot0 = -20*pi/180;
 init = [x0 y0 theta0 vx0 vy0 thetadot0];
 phi = pi/4; omega = 5*pi/180;
 params.phi = phi;
-params.omega=omega;
+params.omega = omega;
 params.Ro = 850*10^3; % [m] orbital radius of target
 params.mu = 3.986004418*10^14; % [m^3/s^2] standard gravitational parameter of earth
 params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
-params.Umax = .2;
+params.Umax = 2;
 params.Tmax = 1;
 params.Ts = .2;
 params.N = 30; params.Nc = 15;
