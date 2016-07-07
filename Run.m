@@ -12,7 +12,7 @@ params.Ts = .2;
 params.N = 30; params.Nc = 15;
 params.Qval = 10^5; params.Rval = 10^2; params.slackweight = 10^8;
 params.eta = 1; params.betaHIGH = 1.5; params.betaLOW = 0.2;
-[xtot, utot, cost, time, ytot] = MPC_Rotate_nonI(init,params,phi,omega);
+[xtot, xtotI, utot, cost, time, ytot] = MPC_Rotate_nonI(init,params,phi,omega);
 
 %%
 x0 =  3; y0 = 3; theta0 = -pi/4; vx0 = -.5; vy0 = 1.5; thetadot0 = -20*pi/180;
