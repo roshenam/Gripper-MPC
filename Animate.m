@@ -52,10 +52,10 @@ for i=2:length(xtot)
     end
     set(path,'XData',xtot(1:i,1),'YData',xtot(1:i,2))
     if rotate
-        set(cone1,'YData',(sin(xtot(i,7)+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(xtot(i,7)+gamma)/((rA-rtol)*sin(gamma))));
-        set(cone2,'Ydata',(1+ sin(xtot(i,7)-gamma).*xrange./((rA-rtol)*sin(gamma)))./(cos(xtot(i,7)-gamma)/((rA-rtol)*sin(gamma))));
+        set(cone1,'YData',(sin(xtot(i,8)+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(xtot(i,8)+gamma)/((rA-rtol)*sin(gamma))));
+        set(cone2,'Ydata',(1+ sin(xtot(i,8)-gamma).*xrange./((rA-rtol)*sin(gamma)))./(cos(xtot(i,8)-gamma)/((rA-rtol)*sin(gamma))));
     end
-    set(port,'Position',[rA*cos(xtot(i,7))-rA/2, rA*sin(xtot(i,7))-rA/2,rA,rA])
+    set(port,'Position',[rA*cos(xtot(i,8))-rA/2, rA*sin(xtot(i,8))-rA/2,rA,rA])
     drawnow  
     pause(.1)
     if animate
