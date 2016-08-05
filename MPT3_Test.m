@@ -1,15 +1,24 @@
 % Defining parameters 
-phi = pi/4; omega = 5*pi/180;
-params.phi = phi;
-params.omega = omega;
+phi = pi/4; omega = 5*pi/180; 
+params.phi = phi; % Phi is the angle of the port from the defined horizontal
+params.omega = omega; % Omega is the rotation in rad/sec of the target
 params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
+% rp is the radius of the target, rs is the radius of the spacecraft, gamma
+% is the half angle of the constraint cone
 params.Umax = 1;
+% Max thrust in Newtons/kg of the free flyer
 params.Tmax = 1;
+% Max torque in N*m/(kg*m^2)
 params.Ts = .2;
+% Discretization constant (0.2 seconds)
 params.Nc = 15;
+% Control Horizon for MPC
 params.Qval = 10^5; params.Rval = 10^2; params.slackweight = 10^8;
+% Weights on states, control inputs, and slack variables
 params.betaHIGH = -1.5; params.betaLOW = -0.2;
 params.eta = 1;
+% Constants defining the shape of the bounding function for normal
+% component of hte velocity
 
 rp = params.rp; rs = params.rs; 
 Ts = params.Ts; 
@@ -33,11 +42,17 @@ Ad = sysD.a; Bd = sysD.b; % Matrices for discrete system
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
 
-Dd = zeros(2,3); 
-Cd = zeros(2,6);
-%Cd = zeros(4,6);
+%Dd = zeros(2,3);
+Dd = zeros(4,3); 
+%Cd = zeros(2,6);
+Cd = zeros(4,6);
 Cd(1,1) = -tan(2*gamma); Cd(1,2) = 1;
 Cd(2,2) = -1;
+Cd(3,1) = -params.eta; Cd(3,2) = -params.eta; 
+Cd(3,4) = cos(gamma); Cd(3,5) = sin(gamma);
+Cd(4,1) = -params.eta; Cd(4,2) = -params.eta;
+Cd(4,4) = -cos(gamma); Cd(4,5) = -sin(gamma);
+
 %Cd(3,1) = eta1; Cd(3,2) = eta1; Cd(3,4) = -cos(gamma); Cd(3,5) = -sin(gamma);
 %Cd(4,1) = -eta2; Cd(4,2) = -eta2; Cd(4,4) = cos(gamma); Cd(4,5) = sin(gamma);
 
@@ -47,7 +62,8 @@ Cd(2,2) = -1;
 Umax = params.Umax;
 Tmax = params.Tmax; % max torque applied by flywheel
 %Ymax = [0; 0; 0; 0];
-Ymax = [0; 0];
+%Ymax = [0; 0];
+Ymax = [0; 0; -C1; C2];
 
 % Creating weighting matrices for cost function
 Q = params.Qval.*eye(6); Q(4:6,4:6) = .5*params.Qval.*eye(3); R = params.Rval.*eye(3); 
