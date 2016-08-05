@@ -1,11 +1,11 @@
-function Ymax = make_Ymax(params, x0vec, slack)
+function Ymax = make_Ymax(params, x0vec, inertial)
 
 xk = x0vec(1); yk = x0vec(2); xdotk = x0vec(4); ydotk = x0vec(5);
 phik = x0vec(8); thetak = x0vec(3);
 rp = params.rp; rs = params.rs; rtol = params.rtol; gamma = params.gamma;
 eta = params.eta; betaHIGH = params.betaHIGH; betaLOW = params.betaLOW;
 
-if slack
+if inertial
     Ymax = zeros(4,1);
     %Ymax = zeros(2,1);
     L1 = sin(phik+gamma)/((rp-rtol)*sin(gamma));

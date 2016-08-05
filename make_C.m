@@ -1,9 +1,9 @@
-function C = make_C(params, x0vec, slack)
+function C = make_C(params, x0vec, inertial)
 
 rp = params.rp; rtol = params.rtol; gamma = params.gamma;
 xk = x0vec(1); yk = x0vec(2);
 phik = x0vec(8);
-if slack
+if inertial
     C = zeros(4,8);
     %C = zeros(2,8);
     L1 = sin(phik+gamma)/((rp-rtol)*sin(gamma));
