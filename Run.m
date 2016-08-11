@@ -1,6 +1,6 @@
-x0 =  3; y0 = 3; theta0 = -pi/4; vx0 = -.2; vy0 = .2; thetadot0 = -20*pi/180;
+x0 =  3; y0 = 3; theta0 = -pi/4; vx0 = .2; vy0 = .2; thetadot0 = -20*pi/180;
 init = [x0 y0 theta0 vx0 vy0 thetadot0];
-phi = pi/4; omega = 10*pi/180;
+phi = pi/4; omega = 5*pi/180;
 params.phi = phi;
 params.omega = omega;
 params.Ro = 550*10^3; % [m] orbital radius of target
@@ -10,8 +10,8 @@ params.Umax = 1;
 params.Tmax = 1;
 params.Ts = .2;
 params.N = 30; params.Nc = 15;
-params.Qval = 10^3; params.Rval = 10^4; params.slackweight = 10^5;
-params.vD = .7;
+params.Qval = 10^4; params.Rval = 10^3; params.slackweight = 10^5;
+params.vD = -.7;
 % slack_intercept and slack_slope are the intercept and slope respectively
 % for determining the slack variable weight as a function of distance as
 % the equation s = 10^(slack_slope*distance from goal point + slack_intercept)
