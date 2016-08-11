@@ -34,8 +34,8 @@ elseif inertial == 0
     
 elseif inertial == 2
     C = zeros(2,10);
-    C(1,1) = -tan(gamma); C(1,2) = 1; C(1,7) = tan(gamma)*params.vD;
-    C(2,1) = -tan(gamma); C(2,2) = -1; C(2,7) = tan(gamma)*params.vD;
+    C(1,1) = -tan(gamma); C(1,2) = 1; C(1,7) = -tan(gamma)*params.vD;
+    C(2,1) = -tan(gamma); C(2,2) = -1; C(2,7) = -tan(gamma)*params.vD;
     
 end
 

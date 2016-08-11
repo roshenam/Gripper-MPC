@@ -20,7 +20,7 @@ v0 = Rmat*[vx0;vy0];
 nu0 = theta0-phi; nu0dot = thetadot0-omega;
 % 7th state is time, 8th state is dt/dt, 9th state is phi(j+1), 10th state
 % is phi(j)
-x0vec = [r0(1); r0(2); nu0; v0(1)+vD; v0(2); nu0dot; 0; 1; phi+omega*Ts; phi];
+x0vec = [r0(1); r0(2); nu0; v0(1)-vD; v0(2); nu0dot; 0; 1; phi+omega*Ts; phi];
 
 % Creating dynamic system
 A = zeros(8,8); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1;
@@ -65,10 +65,10 @@ ytot = Ymax;
 xtot = x0vec;
 cost = [];
 counter = 0;
-while norm([x0vec(1)-vD*counter*Ts,x0vec(2)])>=(rp+rs)
+while norm([x0vec(1)+vD*counter*Ts,x0vec(2)])>=(rp+rs)
 %for j=1:50
     counter = counter + 1;
-    disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm([x0vec(1)-vD*counter*Ts,x0vec(2)]))])
+    disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm([x0vec(1)+vD*counter*Ts,x0vec(2)]))])
     tic
     cvx_begin quiet
     variables X(n,N+1) U(m,N) Y(p,N)
@@ -103,18 +103,18 @@ while norm([x0vec(1)-vD*counter*Ts,x0vec(2)])>=(rp+rs)
 end
 % Transforming data back to inertial frame
 xtotnonI = xtot(1:6,:); % Save data in non-inertial frame
-xreal = xtot(1,:) - vD.*xtot(7,:);
-vxreal = xtot(4,:) - vD;
+xreal = xtot(1,:) + vD.*xtot(7,:);
+vxreal = xtot(4,:) + vD;
 [dim,num] = size(xtot);
-xout = zeros(7,num);
-xout(1,:) = xreal.*cos(xtot(10,:))-xtot(2,:).*sin(xtot(10,:));
+xout = zeros(8,num);
+xout(1,:) = xreal.*cos(xtot(10,:))-xtot(2,:).*sin(xtot(10,:)); 
 xout(2,:) = xreal.*sin(xtot(10,:))+xtot(2,:).*cos(xtot(10,:));
 xout(3,:) = xtot(3,:) + xtot(10,:);
 xout(4,:) = vxreal.*cos(xtot(10,:))-xtot(5,:).*sin(xtot(10,:));
 xout(5,:) = vxreal.*sin(xtot(10,:))+xtot(5,:).*cos(xtot(10,:));
 xout(6,:) = xtot(6,:) + omega;
-xout(7,:) = xtot(end,:);
-xout(8,:) = xtot(7,:);
+xout(7,:) = xtot(7,:);
+xout(8,:) = xtot(end,:); 
 %xtot(9,:) = abs(xtotnonI(1,:)-(rp+rs))+abs(xtotnonI(2,:));
 
 disp('Simulation Complete')
