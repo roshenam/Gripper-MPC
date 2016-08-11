@@ -33,9 +33,13 @@ elseif inertial == 0
     C(4,4) = 1;
     
 elseif inertial == 2
+    %C = zeros(4,10);
     C = zeros(2,10);
     C(1,1) = -tan(gamma); C(1,2) = 1; C(1,7) = -tan(gamma)*params.vD;
     C(2,1) = -tan(gamma); C(2,2) = -1; C(2,7) = -tan(gamma)*params.vD;
-    
+    %C(3,1) = -params.eta; C(3,2) = -params.eta; 
+    %C(3,4) = 1; C(3,7) = -params.eta*params.vD;
+    %C(4,1) = -params.eta; C(4,2) = -params.eta; 
+    %C(4,4) = -1; C(4,7) = -params.eta*params.vD; 
 end
 

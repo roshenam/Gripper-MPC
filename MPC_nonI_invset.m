@@ -1,4 +1,4 @@
-function [xout, xtotnonI, utot, cost, time, ytot] = MPC_nonI_invset(init,params,phi,omega)
+function [xout, xtotnonI, utot, cost, time, ytot, Ymax] = MPC_nonI_invset(init,params,phi,omega)
 % 2D accounting for platforms that rotate with a constant speed.
 % Implementing cone constraints as soft through use of slack variables.
 % This version is modeled in the non-inertial reference frame to make
@@ -36,7 +36,7 @@ sysD = c2d(sysD,Ts);
 % platform.
 Abig = zeros(10,10); Abig(1:8,1:8) = sysD.a; 
 Abig(9,9) = 2; Abig(9,10) = -1; Abig(10,9) = 1;
-Bbig = zeros(10,3); Bbig(1:6,1:3) = sysD.b(1:6,1:3);
+Bbig = zeros(10,3); Bbig(1:8,1:3) = sysD.b(1:8,1:3);
 
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
@@ -50,7 +50,8 @@ Tmax = params.Tmax; % max torque applied by flywheel
 Ymax = make_Ymax(params, x0vec, 2);
 
 % Creating weighting matrices for cost function
-Q = params.Qval.*eye(10); Q(7,7) = 0; Q(8,8) = 0; Q(9,9) = 0; Q(10,10) = 0; 
+Q = params.Qval.*eye(10); 
+Q(7,7) = 0; Q(8,8) = 0; Q(9,9) = 0; Q(10,10) = 0;
 R = params.Rval.*eye(3);
 
 % Solving infinite horizon unconstrained LQR for stability enforcement
@@ -61,14 +62,14 @@ Pbig(1:6,1:6) = P;
 n = 10; m = 3; p=2; 
 time = [];
 utot = [];
-ytot = Ymax;
+ytot = [];
 xtot = x0vec;
 cost = [];
 counter = 0;
 while norm([x0vec(1)+vD*counter*Ts,x0vec(2)])>=(rp+rs)
 %for j=1:50
-    counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm([x0vec(1)+vD*counter*Ts,x0vec(2)]))])
+    counter = counter + 1;
     tic
     cvx_begin quiet
     variables X(n,N+1) U(m,N) Y(p,N)
@@ -91,19 +92,19 @@ while norm([x0vec(1)+vD*counter*Ts,x0vec(2)])>=(rp+rs)
     x0vec = Abig*x0vec+Bbig*u;
     time = [time timecurr];
     xtot = [xtot x0vec] ;
+    ytot = [ytot Y(:,1)];
     utot = [utot u];
-    ytot = [ytot Ymax];
     currcost = cvx_optval;
     cost = [cost; currcost];
-    if counter>100
-        disp(['More than 100 iterations. Stopping simulation.'])
+    if counter>30
+        disp(['More than 30 iterations. Stopping simulation.'])
         break
     end
     
 end
 % Transforming data back to inertial frame
 xtotnonI = xtot(1:6,:); % Save data in non-inertial frame
-xreal = xtot(1,:) + vD.*xtot(7,:);
+xreal = xtot(1,:)+vD.*xtot(7,:);
 vxreal = xtot(4,:) + vD;
 [dim,num] = size(xtot);
 xout = zeros(8,num);
@@ -116,5 +117,4 @@ xout(6,:) = xtot(6,:) + omega;
 xout(7,:) = xtot(7,:);
 xout(8,:) = xtot(end,:); 
 %xtot(9,:) = abs(xtotnonI(1,:)-(rp+rs))+abs(xtotnonI(2,:));
-
 disp('Simulation Complete')

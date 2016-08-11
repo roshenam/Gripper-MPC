@@ -27,6 +27,7 @@ elseif inertial == 0
     Ymax(4) = eta*D-betaLOW;
     
 elseif inertial == 2
-    Ymax = zeros(2,1);
+    Ymax = [0; 0];
+    %Ymax = [0; 0; params.beta1 - eta*(rp+rs); -params.beta2 - eta*(rp+rs)];
 end
 
