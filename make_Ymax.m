@@ -5,7 +5,7 @@ phik = x0vec(8); thetak = x0vec(3);
 rp = params.rp; rs = params.rs; rtol = params.rtol; gamma = params.gamma;
 eta = params.eta; betaHIGH = params.betaHIGH; betaLOW = params.betaLOW;
 
-if inertial
+if inertial==1
     Ymax = zeros(4,1);
     %Ymax = zeros(2,1);
     L1 = sin(phik+gamma)/((rp-rtol)*sin(gamma));
@@ -19,12 +19,14 @@ if inertial
     Ymax(3) = eta*D + betaHIGH;
     Ymax(4) = eta*D - betaLOW;
     
-else
+elseif inertial == 0
     Ymax = zeros(4,1);
     D = abs(xk-(rp+rs))+abs(yk);
     Ymax(1) = 0; Ymax(2) = 0;
     Ymax(3) = eta*D+betaHIGH;
     Ymax(4) = eta*D-betaLOW;
     
+elseif inertial == 2
+    Ymax = zeros(2,1);
 end
 

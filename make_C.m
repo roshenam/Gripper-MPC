@@ -3,9 +3,8 @@ function C = make_C(params, x0vec, inertial)
 rp = params.rp; rtol = params.rtol; gamma = params.gamma;
 xk = x0vec(1); yk = x0vec(2);
 phik = x0vec(8);
-if inertial
+if inertial == 1
     C = zeros(4,8);
-    %C = zeros(2,8);
     L1 = sin(phik+gamma)/((rp-rtol)*sin(gamma));
     L2 = cos(phik+gamma)/((rp-rtol)*sin(gamma));
     L3 = sin(phik-gamma)/((rp-rtol)*sin(gamma));
@@ -26,11 +25,17 @@ if inertial
     C(4,5) = -C(3,5);
     
     
-else
+elseif inertial == 0
     C = zeros(4,8);
     C(1,1) = -tan(gamma); C(1,2) = 1;
     C(2,1) = -tan(gamma); C(2,2) = -1;
     C(3,4) = -1;
     C(4,4) = 1;
+    
+elseif inertial == 2
+    C = zeros(2,10);
+    C(1,1) = -tan(gamma); C(1,2) = 1; C(1,7) = tan(gamma)*params.vD;
+    C(2,1) = -tan(gamma); C(2,2) = -1; C(2,7) = tan(gamma)*params.vD;
+    
 end
 
