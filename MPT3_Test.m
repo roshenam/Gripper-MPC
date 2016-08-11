@@ -5,7 +5,7 @@ params.omega = omega; % Omega is the rotation in rad/sec of the target
 params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
 % rp is the radius of the target, rs is the radius of the spacecraft, gamma
 % is the half angle of the constraint cone
-params.Umax = 1;
+params.Umax = .5;
 % Max thrust in Newtons/kg of the free flyer
 params.Tmax = 1;
 % Max torque in N*m/(kg*m^2)
@@ -13,21 +13,20 @@ params.Ts = .2;
 % Discretization constant (0.2 seconds)
 params.Nc = 15;
 % Control Horizon for MPC
-params.Qval = 10^5; params.Rval = 10^2; params.slackweight = 10^8;
+params.Qval = 10^4; params.Rval = 10^4;
 % Weights on states, control inputs, and slack variables
 params.betaHIGH = -1.5; params.betaLOW = -0.2;
 params.eta = 1;
+params.tantol = .4;
 % Constants defining the shape of the bounding function for normal
 % component of hte velocity
 
 rp = params.rp; rs = params.rs; 
 Ts = params.Ts; 
 betaHIGH = params.betaHIGH; betaLOW = params.betaLOW;
+eta = params.eta; tantol = params.tantol;
 gamma = params.gamma;
-eta1 = betaHIGH/((rp+rs)*(cos(gamma)+sin(gamma))); 
-eta2 = betaLOW/((rp+rs)*(cos(gamma)+sin(gamma))); 
-C1 = params.eta*(rp+rs)*(cos(gamma)+sin(gamma))-params.betaLOW;
-C2 = -params.eta*(rp+rs)*(cos(gamma)+sin(gamma))-params.betaHIGH;
+
 % Creating dynamic system
 A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1;
 A(4,1) = omega^2; A(4,5) = 2*omega; 
@@ -42,16 +41,15 @@ Ad = sysD.a; Bd = sysD.b; % Matrices for discrete system
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
 
-%Dd = zeros(2,3);
-Dd = zeros(4,3); 
+Dd = zeros(5,3); 
+%Dd = zeros(3,3);
+Cd = zeros(5,6);
 %Cd = zeros(2,6);
-Cd = zeros(4,6);
-Cd(1,1) = -tan(2*gamma); Cd(1,2) = 1;
-Cd(2,2) = -1;
-Cd(3,1) = -params.eta; Cd(3,2) = -params.eta; 
-Cd(3,4) = cos(gamma); Cd(3,5) = sin(gamma);
-Cd(4,1) = -params.eta; Cd(4,2) = -params.eta;
-Cd(4,4) = -cos(gamma); Cd(4,5) = -sin(gamma);
+Cd(1,1) = -tan(gamma); Cd(1,2) = 1;
+Cd(2,1) = -tan(gamma); Cd(2,2) = -1;
+Cd(3,1) = -params.eta; Cd(3,2) = -params.eta; Cd(3,4) = -1; 
+Cd(4,1) = -params.eta; Cd(4,2) = -params.eta; Cd(4,5) = 1;
+Cd(5,1) = -params.eta; Cd(5,2) = -params.eta; Cd(5,5) = -1;
 
 %Cd(3,1) = eta1; Cd(3,2) = eta1; Cd(3,4) = -cos(gamma); Cd(3,5) = -sin(gamma);
 %Cd(4,1) = -eta2; Cd(4,2) = -eta2; Cd(4,4) = cos(gamma); Cd(4,5) = sin(gamma);
@@ -63,7 +61,8 @@ Umax = params.Umax;
 Tmax = params.Tmax; % max torque applied by flywheel
 %Ymax = [0; 0; 0; 0];
 %Ymax = [0; 0];
-Ymax = [0; 0; -C1; C2];
+Ymax = [0; 0; -betaHIGH-eta*(rp+rs); tantol-eta*(rp+rs); tantol-eta*(rp+rs)];
+%Ymax = [0; 0; -betaHIGH-eta*(rp+rs)];
 
 % Creating weighting matrices for cost function
 Q = params.Qval.*eye(6); Q(4:6,4:6) = .5*params.Qval.*eye(3); R = params.Rval.*eye(3); 
@@ -84,21 +83,17 @@ system.x.terminalSet = Tset;
 clc
 params.N = 30;
 N = params.N; 
-Nsim = 25;
+Nsim = 60;
 params.Nsim = Nsim;
 mpc = MPCController(system,N);
 %exp = mpc.toExplicit();
 loop = ClosedLoop(mpc, system);
 
-
 % Specify initial conditions in frame with x axis intersecting with target
 % point. Then rotate into shifted frame with x axis along bottom edge of
 % cone
-x0 =  5; y0 = 0; theta0 = -pi/4; vx0 = 0; vy0 = 0; thetadot0 = 5*pi/180;
-Rmatsmall = [cos(gamma) -sin(gamma); sin(gamma) cos(gamma)];
+x0 =  5; y0 = 0; theta0 = -pi/4; vx0 = -.5; vy0 = .5; thetadot0 = 5*pi/180;
 Rmat = [cos(phi) -sin(phi); sin(phi) cos(phi)];
-rnonI = Rmatsmall*[x0; y0];
-vnonI = Rmatsmall*[vx0; vy0];
 rI = Rmat*[x0;y0];
 vI = Rmat*[vx0;vy0];
 init = [rI(1) rI(2) theta0 vI(1) vI(2) thetadot0];
@@ -107,19 +102,13 @@ init = [rI(1) rI(2) theta0 vI(1) vI(2) thetadot0];
 %v0 = Rmat*[vx0;vy0];
 nu0 = theta0-phi; nu0dot = thetadot0-omega;
 %x0vec = [r0(1); r0(2); nu0; v0(1); v0(2); nu0dot];
-x0vec = [rnonI(1); rnonI(2); nu0; vnonI(1); vnonI(2); nu0dot];
-data = loop.simulate(x0vec(1:6), Nsim);
+x0vec = [x0; y0; nu0; vx0; vy0; nu0dot];
+data = loop.simulate(x0vec(1:6), Nsim)
 
 xtotnonI = data.X; % Save data in non-inertial frame
-xtotnonI(1,:) = data.X(1,:).*cos(gamma)+data.X(2,:).*sin(gamma);
-xtotnonI(2,:) = -data.X(1,:).*sin(gamma)+data.X(2,:).*cos(gamma);
-xtotnonI(4,:) = data.X(4,:).*cos(gamma)+data.X(5,:).*sin(gamma);
-xtotnonI(5,:) = -data.X(4,:).*sin(gamma)+data.X(5,:).*cos(gamma);
-
 utotnonI = data.U; % Save thrust data in non-inertial frame
-utotnonI(1,:) = data.U(1,:).*cos(gamma)+data.U(2,:).*sin(gamma);
-utotnonI(2,:) = -data.U(1,:).*sin(gamma)+data.U(2,:).*cos(gamma);
-
+vnbound = -eta.*data.X(1,:)-eta.*data.X(2,:)+betaHIGH+eta*(rp+rs);
+vtbound = -eta.*data.X(1,:)-eta.*data.X(2,:)-tantol+eta*(rp+rs);
 xtot = zeros(8,Nsim+1);
 utot = zeros(3,Nsim);
 mult = 0:Nsim;
@@ -130,11 +119,20 @@ xtot(3,:) = xtotnonI(3,:) + xtot(8,:);
 xtot(4,:) = xtotnonI(4,:).*cos(xtot(8,:))-xtotnonI(5,:).*sin(xtot(8,:));
 xtot(5,:) = xtotnonI(4,:).*sin(xtot(8,:))+xtotnonI(5,:).*cos(xtot(8,:));
 xtot(6,:) = xtotnonI(6,:) + omega;
-xtot(9,:) = eta1.*xtotnonI(1,:)+eta1.*xtotnonI(2,:);
-xtot(10,:) = eta2.*xtotnonI(1,:)+eta2.*xtotnonI(2,:);
-xtot(11,:) = xtotnonI(4,:);
+
 utot(1,:) = utotnonI(1,:).*cos(xtot(8,1:end-1))-utotnonI(2,:).*sin(xtot(8,1:end-1));
 utot(2,:) = utotnonI(1,:).*sin(xtot(8,1:end-1))+utotnonI(2,:).*cos(xtot(8,1:end-1));
 utot(3,:) = utotnonI(3,:);
 
-Animate(init,params,xtot,0,'hi',1,1)
+Animate(init,params,xtot,xtot(end,:),0,'hi',1,1)
+%%
+dist = sqrt(data.X(1,:).^2+data.X(2,:).^2);
+idx = find(dist<=(rp+rs),1);
+final.vn = data.X(4,idx);
+final.vt = data.X(5,idx);
+final.vmag = norm([data.X(4,idx) data.X(5,idx)]);
+final.nu = data.X(3,idx)*180/pi;
+final.angattack = atan2(data.X(5,idx),data.X(4,idx));
+final.nudot = data.X(6,idx)*180/pi;
+final.thrust = sum(sqrt(utot(1,:).^2+utot(2,:).^2));
+final
