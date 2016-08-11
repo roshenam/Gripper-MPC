@@ -133,6 +133,7 @@ d_grip_offset = 0.156;                              % [m] Distance between gripp
 d_grippad_offset = 0.041;                           % [m] Distance between gripper CG and gripper pad
 l_finger = 0.13;                                    % Length of gripper finger
 
+dist = sqrt(data.X(1,:).^2+data.X(2,:).^2);
 idx = find(dist<=(rp+rs),1);
 final.vn = data.X(4,idx-1);
 final.vt = data.X(5,idx-1);
