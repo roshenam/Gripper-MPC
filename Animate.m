@@ -1,4 +1,4 @@
-function [] = Animate(init, params, xtot, animate, filename, rotate, attitude)
+function [] = Animate(init, params, xtot, phidata, animate, filename, rotate, attitude)
 % If animate is 1, a VideoWriter object will be created and a video will be
 % saved of the animation. If rotate is 1, it will plot the rotating cone
 % constraint. xtot must include phi data. If attitude is 1 then xtot should
@@ -52,10 +52,10 @@ for i=2:length(xtot)
     end
     set(path,'XData',xtot(1:i,1),'YData',xtot(1:i,2))
     if rotate
-        set(cone1,'YData',(sin(xtot(i,8)+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(xtot(i,8)+gamma)/((rA-rtol)*sin(gamma))));
-        set(cone2,'Ydata',(1+ sin(xtot(i,8)-gamma).*xrange./((rA-rtol)*sin(gamma)))./(cos(xtot(i,8)-gamma)/((rA-rtol)*sin(gamma))));
+        set(cone1,'YData',(sin(phidata(i)+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(phidata(i)+gamma)/((rA-rtol)*sin(gamma))));
+        set(cone2,'Ydata',(1+ sin(phidata(i)-gamma).*xrange./((rA-rtol)*sin(gamma)))./(cos(phidata(i)-gamma)/((rA-rtol)*sin(gamma))));
     end
-    set(port,'Position',[rA*cos(xtot(i,8))-rA/2, rA*sin(xtot(i,8))-rA/2,rA,rA])
+    set(port,'Position',[rA*cos(phidata(i))-rA/2, rA*sin(phidata(i))-rA/2,rA,rA])
     drawnow  
     pause(.1)
     if animate
