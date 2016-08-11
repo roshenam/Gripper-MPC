@@ -1,4 +1,4 @@
-function [xtot, xtotnonI, utot, cost, time, ytot] = MPC_Rotate_nonI(init,params,phi,omega)
+function [xtot, xtotnonI, utot, cost, time, ytot, slack] = MPC_Rotate_nonI(init,params,phi,omega)
 % 2D accounting for platforms that rotate with a constant speed.
 % Implementing cone constraints as soft through use of slack variables.
 % This version is modeled in the non-inertial reference frame to make
@@ -11,6 +11,8 @@ rp = params.rp; rs = params.rs;
 Ts = params.Ts; 
 N = params.N; Nc = params.Nc; 
 gamma = params.gamma;
+phi = params.phi;
+omega = params.omega;
 Rmat = [cos(phi) sin(phi); -sin(phi) cos(phi)];
 r0 = Rmat*[x0;y0];
 v0 = Rmat*[vx0;vy0];
@@ -54,9 +56,19 @@ Tmax = params.Tmax; % max torque applied by flywheel
 Ymax = make_Ymax(params, x0vec, 0);
 
 % Creating weighting matrices for cost function
-Q = params.Qval.*eye(8); Q(7,7) = 0; Q(8,8) = 0; R = params.Rval.*eye(5); 
-R(4,4) = params.slackweight; R(5,5) = params.slackweight; 
-R(6,6) = params.slackweight; R(7,7) = params.slackweight;
+Q = params.Qval.*eye(8); Q(7,7) = 0; Q(8,8) = 0; R = params.Rval.*eye(5);
+if params.slack_variable
+    dist = sqrt((r0(1)-rp*cos(nu0))^2+(r0(2)-rp*sin(nu0))^2);
+    s_weight = 10^(params.slack_slope*dist + params.slack_intercept);
+    R(4,4) = s_weight; R(5,5) = s_weight;
+    R(6,6) = s_weight; R(7,7) = s_weight;
+    slack = s_weight;
+else
+    
+    R(4,4) = params.slackweight; R(5,5) = params.slackweight;
+    R(6,6) = params.slackweight; R(7,7) = params.slackweight;
+    slack = [];
+end
 % Solving infinite horizon unconstrained LQR for stability enforcement
 [~,P,~] = lqrd(A(1:6,1:6),B(1:6,1:3),Q(1:6,1:6),R(1:3,1:3),Ts);
 Pbig = zeros(8,8);
@@ -105,7 +117,14 @@ while norm(x0vec(1:2))>=(rp+rs)
         disp(['More than 200 iterations. Stopping simulation.'])
         break
     end
-   
+    if params.slack_variable
+        dist = sqrt((x0vec(1)-rp*cos(x0vec(3)))^2+(x0vec(2)-rp*sin(x0vec(3)))^2);
+        s_weight = 10^(params.slack_slope*dist + params.slack_intercept);
+        R(4,4) = s_weight; R(5,5) = s_weight;
+        R(6,6) = s_weight; R(7,7) = s_weight;
+        slack = [slack s_weight];
+    end
+    
 end
 % Transforming data back to inertial frame
 xtotnonI = xtot(1:6,:); % Save data in non-inertial frame
