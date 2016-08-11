@@ -14,10 +14,12 @@ rp = params.rp; rs = params.rs;
 Ts = params.Ts; 
 N = params.N; Nc = params.Nc; 
 nu0 = theta0-phi; nu0dot = thetadot0-omega;
+n = sqrt(params.mu/(params.Ro)^3);
 x0vec = [x0; y0; nu0; vx0; vy0; nu0dot; phi+omega*Ts; phi];
 
 % Creating dynamic system
 A = zeros(6,6); A(1,4) = 1; A(2,5) = 1; A(3,6) = 1;
+%A(4,1) = 3*n^2; A(4,5) = 2*n; A(5,4) = -2*n; %CWH Dynamics
 B = zeros(6,7); B(4,1) = 1; B(5,2) = 1; B(6,3) = 1;
 C = zeros(6,6);  D = zeros(6,7);
 sysD = ss(A,B,C,D);
@@ -47,7 +49,7 @@ Cbig = make_C(params, x0vec, 1);
 % Upper bounds on thrust inputs and slack variables
 Umax = params.Umax;
 Tmax = params.Tmax; % max torque applied by flywheel
-Ymax = make_Ymax(params, x0vec);
+Ymax = make_Ymax(params, x0vec,1);
 
 % Creating weighting matrices for cost function
 Q = params.Qval.*eye(8); Q(7,7) = 0; Q(8,8) = 0; R = params.Rval.*eye(7); 
@@ -71,6 +73,8 @@ counter = 0;
 %Xr(1,k) = phi + k*Ts*omega;
 %end
 %Mtrack = [10000 0; 100 0];
+lambda1 = [100 100 100 10^5 10^5 10^5 10^5];
+lambda2 = 100.*ones(1,6);
 while norm(x0vec(1:2))>=(rp+rs)
 %for j=1:50
     counter = counter + 1;
@@ -92,6 +96,7 @@ while norm(x0vec(1:2))>=(rp+rs)
     %end
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') +...
         X(:,N+1)'*Pbig*X(:,N+1)) %+ norm(Mtrack*(X(7:8,:)-Xr),'fro'));
+        %minimize (sum(lambda1*abs(U(:,1:N))) + sum(lambda2*abs(X(1:6,1:N))))
     cvx_end
     timecurr = toc;
     u = U(:,1);
