@@ -1,4 +1,5 @@
 % Defining parameters
+clear all
 phi = pi/4; omega = 2*pi/180;
 params.phi = phi; % Phi is the angle of the port from the defined horizontal
 params.omega = omega; % Omega is the rotation in rad/sec of the target
@@ -13,7 +14,7 @@ params.Ts = .2;
 % Discretization constant (0.2 seconds)
 params.Nc = 15;
 % Control Horizon for MPC
-params.Qval = 10^4; params.Rval = 10^4;
+params.Qval = 10^4; params.Rval = 10^2;
 % Weights on states, control inputs, and slack variables
 params.betaHIGH = -1.5; params.betaLOW = -0.2;
 params.eta = 1;
@@ -82,9 +83,9 @@ system.x.terminalSet = Tset;
 %%
 clc
 tic
-params.N = 30;
+params.N = 20;
 N = params.N;
-Nsim = 30;
+Nsim = 60;
 params.Nsim = Nsim;
 mpc = MPCController(system,N);
 %exp = mpc.toExplicit();
@@ -93,7 +94,7 @@ loop = ClosedLoop(mpc, system);
 % Specify initial conditions in frame with x axis intersecting with target
 % point. Then rotate into shifted frame with x axis along bottom edge of
 % cone
-x0 =  5; y0 = 0; theta0 = -pi/4; vx0 = -.9; vy0 = .9; thetadot0 = 5*pi/180;
+x0 =  3; y0 = 0; theta0 = -pi/4; vx0 = -.7; vy0 = .7; thetadot0 = 5*pi/180;
 Rmat = [cos(phi) -sin(phi); sin(phi) cos(phi)];
 rI = Rmat*[x0;y0];
 vI = Rmat*[vx0;vy0];
@@ -110,23 +111,23 @@ xtotnonI = data.X; % Save data in non-inertial frame
 utotnonI = data.U; % Save thrust data in non-inertial frame
 vnbound = -eta.*data.X(1,:)-eta.*data.X(2,:)+betaHIGH+eta*(rp+rs);
 vtbound = -eta.*data.X(1,:)-eta.*data.X(2,:)-tantol+eta*(rp+rs);
-xtot = zeros(8,Nsim+1);
+xtot = zeros(7,Nsim+1);
 utot = zeros(3,Nsim);
 mult = 0:Nsim;
 time = Ts.*mult;
-xtot(8,:) = phi+Ts*omega.*mult;
-xtot(1,:) = xtotnonI(1,:).*cos(xtot(8,:))-xtotnonI(2,:).*sin(xtot(8,:));
-xtot(2,:) = xtotnonI(1,:).*sin(xtot(8,:))+xtotnonI(2,:).*cos(xtot(8,:));
-xtot(3,:) = xtotnonI(3,:) + xtot(8,:);
-xtot(4,:) = xtotnonI(4,:).*cos(xtot(8,:))-xtotnonI(5,:).*sin(xtot(8,:));
-xtot(5,:) = xtotnonI(4,:).*sin(xtot(8,:))+xtotnonI(5,:).*cos(xtot(8,:));
+xtot(7,:) = phi+Ts*omega.*mult;
+xtot(1,:) = xtotnonI(1,:).*cos(xtot(7,:))-xtotnonI(2,:).*sin(xtot(7,:));
+xtot(2,:) = xtotnonI(1,:).*sin(xtot(7,:))+xtotnonI(2,:).*cos(xtot(7,:));
+xtot(3,:) = xtotnonI(3,:) + xtot(7,:);
+xtot(4,:) = xtotnonI(4,:).*cos(xtot(7,:))-xtotnonI(5,:).*sin(xtot(7,:));
+xtot(5,:) = xtotnonI(4,:).*sin(xtot(7,:))+xtotnonI(5,:).*cos(xtot(7,:));
 xtot(6,:) = xtotnonI(6,:) + omega;
 
-utot(1,:) = utotnonI(1,:).*cos(xtot(8,1:end-1))-utotnonI(2,:).*sin(xtot(8,1:end-1));
-utot(2,:) = utotnonI(1,:).*sin(xtot(8,1:end-1))+utotnonI(2,:).*cos(xtot(8,1:end-1));
+utot(1,:) = utotnonI(1,:).*cos(xtot(7,1:end-1))-utotnonI(2,:).*sin(xtot(7,1:end-1));
+utot(2,:) = utotnonI(1,:).*sin(xtot(7,1:end-1))+utotnonI(2,:).*cos(xtot(7,1:end-1));
 utot(3,:) = utotnonI(3,:);
 
-Animate(init,params,xtot,xtot(end,:),0,'hi',1,1)
+Animate(init,params,xtot,xtot(end,:),1,'2D_Inv_Set',1,1)
 %% Determining incoming conditions upon impact
 
 d_grip_offset = 0.156;                              % [m] Distance between gripper CG and target CG when captured
@@ -135,6 +136,7 @@ l_finger = 0.13;                                    % Length of gripper finger
 
 dist = sqrt(data.X(1,:).^2+data.X(2,:).^2);
 idx = find(dist<=(rp+rs),1);
+final.idx = idx;
 final.vn = data.X(4,idx-1);
 final.vt = data.X(5,idx-1);
 final.vmag = norm([data.X(4,idx-1) data.X(5,idx-1)]);
