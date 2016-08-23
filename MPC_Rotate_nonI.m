@@ -95,8 +95,8 @@ while norm(x0vec(1:2))>=(rp+rs)
     max((U(1,:).^2 + U(2,:).^2)') <= Umax';
     max(U(3,:)') <= Tmax;
     min(U(3,:)') >= -Tmax;
-    atan(d) - X(3,end) <= .12;
-    atan(d) - X(3,end) >= -.12;
+    %atan(d) - X(3,end) <= params.angtol;
+    %atan(d) - X(3,end) >= -params.angtol;
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') +...
         X(:,N+1)'*Pbig*X(:,N+1));
     cvx_end

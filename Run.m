@@ -35,8 +35,9 @@ params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = 20*pi/180;
 params.Umax = .2;
 params.Tmax = 1;
 params.Ts = .2;
-params.N = 15; params.Nc = 5;
+params.N = 30; params.Nc = 5;
 params.Qval = 10^3; params.Rval = 10^4; params.slackweight = 10^5;
+params.angtol = 5*pi/180;
 % slack_intercept and slack_slope are the intercept and slope respectively
 % for determining the slack variable weight as a function of distance as
 % the equation s = 10^(slack_slope*distance from goal point + slack_intercept)
