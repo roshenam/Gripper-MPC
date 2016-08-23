@@ -29,20 +29,20 @@ init = [x0 y0 theta0 vx0 vy0 thetadot0];
 phi = pi/4; omega = 5*pi/180;
 params.phi = phi;
 params.omega = omega;
-params.Ro = 850*10^3; % [m] orbital radius of target
+params.Ro = 550*10^3; % [m] orbital radius of target
 params.mu = 3.986004418*10^14; % [m^3/s^2] standard gravitational parameter of earth
-params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = pi/20;
+params.rp = .2; params.rtol = .2+.01;  params.rs = .2; params.gamma = 20*pi/180;
 params.Umax = .2;
 params.Tmax = 1;
 params.Ts = .2;
-params.N = 30; params.Nc = 15;
+params.N = 15; params.Nc = 5;
 params.Qval = 10^3; params.Rval = 10^4; params.slackweight = 10^5;
 % slack_intercept and slack_slope are the intercept and slope respectively
 % for determining the slack variable weight as a function of distance as
 % the equation s = 10^(slack_slope*distance from goal point + slack_intercept)
 % weight as a function of distance 
 params.slack_intercept = 8; params.slack_slope = -0.75; 
-params.slack_variable = 1; % If 1, slack weight will change with distance
+params.slack_variable = 0; % If 1, slack weight will change with distance
 params.eta = 1; params.betaHIGH = 1.5; params.betaLOW = 0.2;
 [xtot, xtotI, utot, cost, time, ytot, slack] = MPC_Rotate_nonI(init,params);
 

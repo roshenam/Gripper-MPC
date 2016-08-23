@@ -28,8 +28,8 @@ xlim([-4,dim+1])
 ylim([-4,dim+1])
 axis('square')
 port = rectangle('Position',[rA*cos(phi)-rA/2,rA*sin(phi)-rA/2, rA, rA],'Curvature',[1,1],'facecolor','r');
-y1 = (sin(phi+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(phi+gamma)/((rA-rtol)*sin(gamma)));
-y2 = (1+ sin(phi-gamma).*xrange./((rA-rtol)*sin(gamma)))./(cos(phi-gamma)/((rA-rtol)*sin(gamma)));
+y1 = (sin(phi+gamma).*xrange./((-rtol)*sin(gamma))-1)./(cos(phi+gamma)/((-rtol)*sin(gamma)));
+y2 = (1+ sin(phi-gamma).*xrange./((-rtol)*sin(gamma)))./(cos(phi-gamma)/((-rtol)*sin(gamma)));
 cone1 = line(xrange,y1,'color','k','linewidth',2);
 cone2 = line(xrange,y2,'color','k','linewidth',2);
 
@@ -52,8 +52,8 @@ for i=2:length(xtot)
     end
     set(path,'XData',xtot(1:i,1),'YData',xtot(1:i,2))
     if rotate
-        set(cone1,'YData',(sin(phidata(i)+gamma).*xrange./((rA-rtol)*sin(gamma))-1)./(cos(phidata(i)+gamma)/((rA-rtol)*sin(gamma))));
-        set(cone2,'Ydata',(1+ sin(phidata(i)-gamma).*xrange./((rA-rtol)*sin(gamma)))./(cos(phidata(i)-gamma)/((rA-rtol)*sin(gamma))));
+        set(cone1,'YData',(sin(phidata(i)+gamma).*xrange./((-rtol)*sin(gamma))-1)./(cos(phidata(i)+gamma)/((-rtol)*sin(gamma))));
+        set(cone2,'Ydata',(1+ sin(phidata(i)-gamma).*xrange./((-rtol)*sin(gamma)))./(cos(phidata(i)-gamma)/((-rtol)*sin(gamma))));
     end
     set(port,'Position',[rA*cos(phidata(i))-rA/2, rA*sin(phidata(i))-rA/2,rA,rA])
     drawnow  
