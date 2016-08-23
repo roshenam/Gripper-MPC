@@ -1,4 +1,4 @@
-function [xtot, xtotnonI, utot, cost, time, ytot, slack] = MPC_Rotate_nonI(init,params,phi,omega)
+function [xtot, xtotnonI, utot, cost, time, ytot, slack] = MPC_Rotate_nonI(init,params)
 % 2D accounting for platforms that rotate with a constant speed.
 % Implementing cone constraints as soft through use of slack variables.
 % This version is modeled in the non-inertial reference frame to make
@@ -10,7 +10,6 @@ vx0 = init(4); vy0 = init(5); thetadot0 = init(6);
 rp = params.rp; rs = params.rs; 
 Ts = params.Ts; 
 N = params.N; Nc = params.Nc; 
-gamma = params.gamma;
 phi = params.phi;
 omega = params.omega;
 Rmat = [cos(phi) sin(phi); -sin(phi) cos(phi)];
@@ -86,6 +85,7 @@ while norm(x0vec(1:2))>=(rp+rs)
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     tic
+    d = x0vec(2)/x0vec(1);
     cvx_begin quiet
     variables X(n,N+1) U(m,N) Y(p,N)
     X(:,2:N+1) == Abig*X(:,1:N) + Bbig*U;
@@ -95,6 +95,8 @@ while norm(x0vec(1:2))>=(rp+rs)
     max((U(1,:).^2 + U(2,:).^2)') <= Umax';
     max(U(3,:)') <= Tmax;
     min(U(3,:)') >= -Tmax;
+    atan(d) - X(3,end) <= .12;
+    atan(d) - X(3,end) >= -.12;
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') +...
         X(:,N+1)'*Pbig*X(:,N+1));
     cvx_end
