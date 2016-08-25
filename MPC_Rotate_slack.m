@@ -1,4 +1,4 @@
-function [xtot, utot, cost, time, ytot] = MPC_Rotate_slack(init,params,phi,omega)
+function [xtot, utot, cost, time, ytot] = MPC_Rotate_slack(init,params)
 % 2D accounting for platforms that rotate with a constant speed.
 % Implementing cone constraints as soft through use of slack variables.
 
@@ -8,13 +8,14 @@ function [xtot, utot, cost, time, ytot] = MPC_Rotate_slack(init,params,phi,omega
 % rotating point.
 
 % Extracting initial conditions and parameters from inputs
+phi = params.phi; omega = params.omega; 
 x0 = init(1); y0 = init(2); theta0 = init(3); 
 vx0 = init(4); vy0 = init(5); thetadot0 = init(6);
 rp = params.rp; rs = params.rs; 
 Ts = params.Ts; 
 N = params.N; Nc = params.Nc; 
 nu0 = theta0-phi; nu0dot = thetadot0-omega;
-n = sqrt(params.mu/(params.Ro)^3);
+n = sqrt(params.mu/(params.Ro)^3); % Parameter for CWH dynamics
 x0vec = [x0; y0; nu0; vx0; vy0; nu0dot; phi+omega*Ts; phi];
 
 % Creating dynamic system
