@@ -101,12 +101,12 @@ while norm(x0vec(1:2))>=(rp+rs)
     X(:,1) == x0vec;
     %max(Y(:,1:Nc)') <= Ymax';
     for j = 1:N
-        yd = (rp-rtol)*sin(phis(j));
-        xd = (rp-rtol)*cos(phis(j));
-        m1 = tan(phis(j)+gamma);
-        m2 = tan(phis(j)-gamma);
-        (X(2,j)-yd) - m1.*(X(1,j)-xd) + U(4,j) <= 0;
-        (X(2,j)-yd) - m2.*(X(1,j)-xd) + U(5,j) >= 0;
+        L1 = sin(phis(j)+gamma)./((rp-rtol)*sin(gamma));
+        L2 = -cos(phis(j)+gamma)./((rp-rtol)*sin(gamma));
+        L3 = sin(phis(j)-gamma)./((rp-rtol)*sin(gamma));
+        L4 = -cos(phis(j)-gamma)./((rp-rtol)*sin(gamma));
+        X(1,j)*L1 + X(2,j)*L2 + U(4,j) <= 1;
+        X(1,j)*L3 + X(2,j)*L4 + U(5,j) >= 1; 
     end
     max((U(1,:).^2 + U(2,:).^2)') <= Umax';
     max(U(3,:)') <= Tmax;
