@@ -1,15 +1,17 @@
 % Defining parameters
-
+clear all
 phi = pi/4; omega = 2*pi/180;
 params.phi = phi; % Phi is the angle of the port from the defined horizontal
 params.omega = omega; % Omega is the rotation in rad/sec of the target
 params.rp = .15; params.rtol = .02;  params.rs = .15; params.gamma = 50*pi/180;
 params.w = .01;
 params.l = .1;
+%theta_c = 4*pi/180;
 theta_c = 2*pi/180;
-gamma_max = atan(.05/(params.rp+params.rs)) - theta_c;
+gamma_max = atan(.05/(params.rp+params.rs)) - theta_c
+%gamma_max = 5*pi/180;
 params.gamma = gamma_max;
-
+%%
 omega_c = 100*pi/180;
 
 % rp is the radius of the target, rs is the radius of the spacecraft, gamma
@@ -51,8 +53,8 @@ Ad = sysD.a; Bd = sysD.b; % Matrices for discrete system
 
 %Dd = zeros(5,3);
 %Dd = zeros(3,3);
-Dd = zeros(8,5);
-Cd = zeros(8,6);
+Dd = zeros(9,5);
+Cd = zeros(9,6);
 %Cd = zeros(2,6);
 eta_vel = vmax/(sqrt(2)*(rp+rs));
 eta_theta = theta_c/(rp+rs);
@@ -68,6 +70,7 @@ Cd(5,1) = -eta_vel; Cd(5,2) = -eta_vel; Cd(5,5) = -1;
 Cd(6,4) = 1; Cd(6,5) = 1; % angle of attack < pi/4
 Cd(7,1) = -eta_omega; Cd(7,2) = -eta_omega; Cd(7,6) = 1; % Omega constraints 
 Cd(8,1) = -eta_omega; Cd(8,2) = -eta_omega; Cd(8,6) = -1;
+Cd(9,1) = -1; Cd(9,2) = -1; % x+y >0 to use it as approximation of distance
 
 %Cd(3,1) = eta1; Cd(3,2) = eta1; Cd(3,4) = -cos(gamma); Cd(3,5) = -sin(gamma);
 %Cd(4,1) = -eta2; Cd(4,2) = -eta2; Cd(4,4) = cos(gamma); Cd(4,5) = sin(gamma);
@@ -82,7 +85,7 @@ Tmax = params.Tmax; % max torque applied by flywheel
    % -betaHIGH-eta*(rp+rs); tantol-eta*(rp+rs); tantol-eta*(rp+rs)];
 %Ymax = -betaHIGH-eta*(rp+rs);
 %Ymax = [0; 0; -betaHIGH-eta*(rp+rs)];
-Ymax = [tan(gamma)*params.rtol; tan(gamma)*params.rtol; 0; 0; 0; 0; 0; 0]%; 100*vmax/sqrt(2)];...
+Ymax = [tan(gamma)*params.rtol; tan(gamma)*params.rtol; 0; 0; 0; 0; 0; 0; 0]%; 100*vmax/sqrt(2)];...
      %vmax/sqrt(2)-eta*(rp+rs)]%; vmax/sqrt(2)-eta*(rp+rs); vmax/sqrt(2)-eta*(rp+rs);...
 %     theta_c - eta*(rp+rs); theta_c - eta*(rp+rs); -eta*(rp+rs);...
 %     omega_max - eta*(rp+rs); omega_max - eta*(rp+rs)];
@@ -99,8 +102,10 @@ system = LTISystem('A',Ad,'B',Bd,'C',Cd,'D',Dd,'Ts',Ts);
 system.u.min = [-Umax; -Umax; -Tmax; -10^4; -10^4];
 system.u.max = [Umax; Umax; Tmax; 10^4; 10^4];
 system.y.max = Ymax;
-system.x.min = [0; -inf; -inf; -inf; -inf; -inf];
+%system.x.min = [0; -inf; -inf; -inf; -inf; -inf];
 %system.y.with('softMax');
+system.x.with('reference')
+xref = [0 0 0 -.2 0 0 0];
 system.x.penalty = QuadFunction(Q);
 system.u.penalty = QuadFunction(R);
 Pn = system.LQRPenalty;
@@ -110,6 +115,7 @@ system.x.with('terminalPenalty');
 system.x.terminalPenalty = Pn;
 system.x.with('terminalSet');
 system.x.terminalSet = Tset;
+
 %%
 clc
 tic
@@ -124,7 +130,7 @@ loop = ClosedLoop(mpc, system);
 % Specify initial conditions in frame with x axis intersecting with target
 % point. Then rotate into shifted frame with x axis along bottom edge of
 % cone
-x0 =  8; y0 = 0; theta0 = 0; vx0 = -1; vy0 = .9; thetadot0 = 5*pi/180;
+x0 =  1; y0 = 4; theta0 = 0; vx0 = 0; vy0 = 0; thetadot0 = 0;
 Rmat = [cos(phi) -sin(phi); sin(phi) cos(phi)];
 rI = Rmat*[x0;y0];
 vI = Rmat*[vx0;vy0];
@@ -135,6 +141,7 @@ init = [rI(1) rI(2) theta0 vI(1) vI(2) thetadot0];
 nu0 = theta0-phi; nu0dot = thetadot0-omega;
 %x0vec = [r0(1); r0(2); nu0; v0(1); v0(2); nu0dot];
 x0vec = [x0; y0; nu0; vx0; vy0; nu0dot];
+%data = loop.simulate(x0vec(1:6), Nsim,'x.reference',xref')
 data = loop.simulate(x0vec(1:6), Nsim)
 
 toc
