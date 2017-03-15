@@ -45,14 +45,14 @@ Bbig = zeros(8,7); Bbig(1:6,1:3) = sysD.b(1:6,1:3);
 % Y is a vector of constrained outputs. C and D are matrices defining Y's
 % dependence on the states and control inputs
 
-Dbig = zeros(2,7); Dbig(1,4) = 1; Dbig(2,5) = 1; % Slack variables to make constraints soft
-Dbig(3,6) = 1; Dbig(4,7) = 1;
-Cbig = make_C(params, x0vec, 0);
+Dbig = zeros(7,7); Dbig(1,4) = 1; Dbig(2,5) = 1; % Slack variables to make constraints soft
+%Dbig(3,6) = 1; Dbig(4,7) = 1;
+Cbig = make_C(params, x0vec, 3);
 
 % Upper bounds on thrust inputs and slack variables
 Umax = params.Umax;
 Tmax = params.Tmax; % max torque applied by flywheel
-Ymax = make_Ymax(params, x0vec, 0);
+Ymax = make_Ymax(params, x0vec, 3);
 
 % Creating weighting matrices for cost function
 Q = params.Qval.*eye(8); Q(7,7) = 0; Q(8,8) = 0; R = params.Rval.*eye(5);
@@ -73,7 +73,7 @@ end
 Pbig = zeros(8,8);
 Pbig(1:6,1:6) = P;
 
-n = 8; m = 7; p=4; 
+n = 8; m = 7; p=7; 
 time = [];
 utot = [];
 ytot = Ymax;
@@ -85,18 +85,16 @@ while norm(x0vec(1:2))>=(rp+rs)
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     tic
-    d = x0vec(2)/x0vec(1);
     cvx_begin quiet
     variables X(n,N+1) U(m,N) Y(p,N)
     X(:,2:N+1) == Abig*X(:,1:N) + Bbig*U;
     Y(:,1:N) == Cbig*X(:,1:N) + Dbig*U;
     X(:,1) == x0vec;
-    max(Y(:,1:Nc)') <= Ymax';
+    max(Y(1:2,1:Nc)') <= Ymax(1:2)';
+    %Y(3:end,end) <= Ymax(3:end);
     max((U(1,:).^2 + U(2,:).^2)') <= Umax';
     max(U(3,:)') <= Tmax;
     min(U(3,:)') >= -Tmax;
-    %atan(d) - X(3,end) <= params.angtol;
-    %atan(d) - X(3,end) >= -params.angtol;
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') +...
         X(:,N+1)'*Pbig*X(:,N+1));
     cvx_end
@@ -113,8 +111,8 @@ while norm(x0vec(1:2))>=(rp+rs)
     ytot = [ytot Ymax];
     currcost = cvx_optval;
     cost = [cost; currcost];
-    Cbig = make_C(params, x0vec, 0);
-    Ymax = make_Ymax(params, x0vec, 0);
+    Cbig = make_C(params, x0vec, 3);
+    Ymax = make_Ymax(params, x0vec, 3);
     if counter>200
         disp(['More than 200 iterations. Stopping simulation.'])
         break

@@ -29,5 +29,15 @@ elseif inertial == 0
 elseif inertial == 2
     Ymax = [0; 0];
     %Ymax = [0; 0; params.beta1 - eta*(rp+rs); -params.beta2 - eta*(rp+rs)];
+    
+elseif inertial == 3
+    d = x0vec(2)/x0vec(1);
+    Ymax = zeros(7,1);
+    Ymax(1) = 0; Ymax(2) = 0;
+    Ymax(3) = params.vnmax;
+    Ymax(4) = params.vtmax;
+    Ymax(5) = params.vtmax; 
+    Ymax(6) = params.angtol+atan(d);
+    Ymax(7) = params.angtol-atan(d);
 end
 

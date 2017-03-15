@@ -11,3 +11,5 @@ hold all
 plot(vt,y)
 plot(x,2.*ones(size(x)))
 ylim([0,2.2])
+params.vtmax = max(vt);
+params.vnmin = min(vn);

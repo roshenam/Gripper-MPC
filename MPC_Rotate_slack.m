@@ -69,6 +69,8 @@ R(4,4) = params.slackweight; R(5,5) = params.slackweight;
 %Pbig = zeros(8,8);
 Pbig(1:6,1:6) = P;
 
+[cA, cb] = Calc_InvSet(params, Abig, Bbig(:,1:3));
+
 n = 6; m = 5; %p=4;
 time = [];
 utot = [];
@@ -87,10 +89,28 @@ phidata = phi;
 %lambda2 = 100.*ones(1,6);
 multiplier = 0:1:N-1;
 phis = phi + omega.*Ts.*multiplier;
+x1dot_min = -0.5;       % m/s (true limit is ~0.3)
+x1dot_max = 0.5; 
+x2dot_min = -0.5;
+x2dot_max = 0.5;
+% x1_min = 0.1;         % meters (true limits)
+% x1_max = 3.5;   
+% x2_min = 0.1;
+% x2_max = 2.5;
+x1_min = -10;           % meters (relaxed limits)
+x1_max = 10;   
+x2_min = -10;
+x2_max = 10;
+thetadot_min = -pi;     % rad/s (made up)
+thetadot_max = pi; 
+theta_min = -50*pi;     % rad (in principle, should have no limits)
+theta_max = 50*pi;
+xmax = [x1_max x2_max theta_max x1dot_max x2dot_max thetadot_max]';
+xmin = [x1_min x2_min theta_min x1dot_min x2dot_min thetadot_min]';
 
-while norm(x0vec(1:2))>=(rp+rs)
-    %for j=1:50
-    phis = phis + omega.*Ts;
+%while norm(x0vec(1:2))>=(rp+rs)
+    for j=1
+    
     counter = counter + 1;
     disp(['Running optimization ',num2str(counter),', distance from origin is ',num2str(norm(x0vec(1:2)))])
     tic
@@ -108,14 +128,15 @@ while norm(x0vec(1:2))>=(rp+rs)
         X(1,j)*L1 + X(2,j)*L2 + U(4,j) <= 1;
         X(1,j)*L3 + X(2,j)*L4 + U(5,j) >= 1; 
     end
-    max((U(1,:).^2 + U(2,:).^2)') <= Umax';
+    max(U(1,:)) <= Umax;
+    min(U(1,:)) >= -Umax;
+    max(U(2,:)) <= Umax;
+    min(U(2,:)) >= -Umax;
     max(U(3,:)') <= Tmax;
     min(U(3,:)') >= -Tmax;
-    %if (phi-theta0)>0
-    %max(X(7,:)') <= x0vec(6)+N*Ts*omega;
-    %else
-    %    min(X(7,:)') >= x0vec(6)-N*Ts*omega;
-    %end
+    max(X') <= xmax';
+    min(X') >= xmin';
+    max((cA*X(:,N+1))') <= cb';
     minimize (norm(Q*X(:,1:N),'fro') + norm(R*U(:,1:N),'fro') +...
         X(:,N+1)'*Pbig*X(:,N+1)) %+ norm(Mtrack*(X(7:8,:)-Xr),'fro'));
     %minimize (sum(lambda1*abs(U(:,1:N))) + sum(lambda2*abs(X(1:6,1:N))))
@@ -137,6 +158,7 @@ while norm(x0vec(1:2))>=(rp+rs)
     end
     phidata = [phidata phis(2)];
     x0vec = Abig*x0vec+Bbig*u;
+    phis = phis + omega.*Ts;
     time = [time timecurr];
     xtot = [xtot x0vec] ;
     utot = [utot u];

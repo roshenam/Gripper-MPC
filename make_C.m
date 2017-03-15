@@ -26,6 +26,7 @@ if inertial == 1
     
     
 elseif inertial == 0
+    % Upper and lower bounds on normal velocity 
     C = zeros(4,8);
     C(1,1) = -tan(gamma); C(1,2) = 1;
     C(2,1) = -tan(gamma); C(2,2) = -1;
@@ -41,5 +42,14 @@ elseif inertial == 2
     %C(3,4) = 1; C(3,7) = -params.eta*params.vD;
     %C(4,1) = -params.eta; C(4,2) = -params.eta; 
     %C(4,4) = -1; C(4,7) = -params.eta*params.vD; 
+elseif inertial == 3
+    % Upper bound on normal velocity, upper and lower bounds on tangential
+    % velocity
+    C = zeros(7,8);
+    C(1,1) = -tan(gamma); C(1,2) = 1;
+    C(2,1) = -tan(gamma); C(2,2) = -1;
+    C(3,4) = -1; % upper bound on normal velocity
+    C(4,5) = 1; C(5,5) = -1; % upper bound on tangential velocity
+    C(6,3) = 1; C(7,3) = -1; % bounds on omega
 end
 
