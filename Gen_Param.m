@@ -16,13 +16,17 @@ params.theta_c = 2*pi/180;
 % can see from the plot in Matt's paper that a max offset of 5 cm should be
 % ok
 params.dmax = .05;
-% rt is the radius of the target, rs is the radius of the spacecraft
-params.Umax = .2;
+
 % Max thrust in Newtons/kg of the free flyer
-params.Tmax = .3; % 50% of stall torque
+params.Umax = .2;
+
 % Max torque in N*m/(kg*m^2)
-params.Ts = 0.5;
+params.Tmax = .3; % 50% of stall torque
+
 % Discretization constant (in seconds)
+params.Ts = 0.5;
+
+% Weights on states, inputs, and slack variables
 params.Qval = 10^3; params.Rval = 10^2;
 params.Qval2 = 10^2;
 params.slackweight = 10^6;
