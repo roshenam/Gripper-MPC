@@ -105,31 +105,29 @@ xt = 0; rt = ParamsT.rt; rs = ParamsS.rs;
 omega = ParamsT.omega;
 nu0 = ParamsT.nu0;
 % Need the offset angle of the target location from the negative horizontal
-nu_n = (omega/abs(omega))*wrapTo2Pi((phi-pi-wrapTo2Pi(nu0 + omega*Ts1*(idx))))
+nu_n = -(omega/abs(omega))*wrapTo2Pi((phi-pi-wrapTo2Pi(nu0 + omega*Ts1*(idx))))
 vf = ParamsS.vf;
 x0 = xout_rot(end,1) 
+% for this, assuming our velocity is only along the horizontal
+% not true in general, but will use LQR to force us towards this trajectory
 v0 = xout_rot(end,3) 
-xf = (xt-rt-rs); 
-%vf = .2;
-R = xf-x0
-%umax = .4/18;
-t1 = abs((vf-v0)/umax)
+xf = (xt-rt-rs); % final location of center of spacecraft
+Rdis = xf-x0
+t1 = abs((vf-v0)/umax) % time to accelerate/deccelerate from v0 to vf at max thrust
 if(vf>v0)
-    d1 = .5*umax*t1^2+v0*t1;
+    d1 = .5*umax*t1^2+v0*t1; % distance traveled over t1
 else
     d1 = .5*(-umax)*t1^2+v0*t1;
 end
-%d2 = R-d1;
-%t2 = d2/vf;
-k = (abs(omega)*t1-nu_n+abs(omega)*(R-d1)/vf)/(2*pi);
-if(vf>v0)
+k = (abs(omega)*t1-nu_n+abs(omega)*(Rdis-d1)/vf)/(2*pi);
+if(vf>v0) % depending on if accel or deccel round up or down
     N = ceil(k);
 else
     N = floor(k);
 end
 
-twait = (N-k)*2*pi/(abs(omega)*(1-v0/vf))
-t2 = (R-d1-twait*v0)/vf
+twait = (N-k)*2*pi/(abs(omega)*(1-v0/vf)) % initial coasting wait time for alignment
+t2 = (Rdis-d1-twait*v0)/vf % coasting time
 if(t2<0)
     disp('Not possible!! Move away and try again')
     xout = NaN;
@@ -138,7 +136,7 @@ if(t2<0)
 end
 n_phase2 = floor((t1+t2+twait)/Ts2) %number of simulation steps
 t = linspace(0,t1+t2+twait,n_phase2);
-u_desrot = zeros(length(t),2);
+u_desrot = zeros(length(t),2); % vector of desired thrust values in rotated frame
 idx1 = find(t>twait,1);
 idx2 = find(t>(twait+t1),1);
 
@@ -151,13 +149,38 @@ end
 u_des = zeros(size(u_desrot));
 % rotate back to initial frame
 for i=1:n_phase2
-    u_des(i,:) = Rr2n*u_desrot(i,:)';
+    u_des(i,:) = Rr2n*u_desrot(i,:)'; % rotating thrust back to table frame
 end
 
-%% Compute LQR controller gains
+%% Generate states for desired trajectory
+x_desrot = zeros(length(u_des),2);
+v_desrot = zeros(length(u_des),2);
+taccel = t(idx1:idx2);
+tcoast = t(idx2:end);
+x_desrot(1:idx1,1) = x0+v0.*t(1:idx1);
+v_desrot(1:idx1,1) = v0;
+if(vf<v0)
+    x_desrot(idx1:idx2,1) = x_desrot(idx1,1)+v0.*(taccel-twait)-.5*umax.*((taccel-twait).^2);
+    v_desrot(idx1:idx2,1) = v0-umax.*(taccel-twait);
+else
+    x_desrot(idx1:idx2,1) = x_desrot(idx1,1)+v0.*(taccel-twait)+.5*umax.*((taccel-twait).^2);
+    v_desrot(idx1:idx2,1) = v0+umax.*(taccel-twait);
+end
+x_desrot(idx2:end,1) = x_desrot(idx2,1) + vf.*(tcoast-twait-t1);
+v_desrot(idx2:end,1) = vf;
+% rotate back to table frame
+x_des = zeros(size(x_desrot));
+v_des = zeros(size(v_desrot));
+for i=1:length(x_des)
+    x_des(i,:) = Rr2n*x_desrot(i,:)';
+    v_des(i,:) = Rr2n*v_desrot(i,:)';
+end
 
-
+state_des = [x_des v_des]; % vector of desired states for phase 2 trajectory
+% figure
+% plot(x_des(:,1),x_des(:,2))
 %% Simulate phase 2
+[K,~,~] = lqr(sysC,Q,R); %Compute LQR controller gains
 y0 = xout(idx,:);
 tspan = [idx*Ts1,idx*Ts1+t1+t2+twait];
 Pstruct.A = A;
@@ -165,6 +188,10 @@ Pstruct.B = B;
 Pstruct.u = u_des;
 Pstruct.t = t+idx*Ts1;
 Pstruct.i = 1;
+Pstruct.K = K;
+Pstruct.umax = umax;
+Pstruct.state_des = state_des;
+%figure(20)
 [tout,yout] = ode45(@(t,x) spacecraft_dyn(t,x,Pstruct),tspan,y0);
 %plot(yout(:,1),yout(:,2))
 %ylim([0,2])
@@ -195,23 +222,37 @@ ttotal = zeros(length(xtotal),1);
 ttotal(1:idx) = t_phase1;
 ttotal((idx+1):end) = t_phase2;
 %%
-if animate
-    h = figure('Units','Normalized','Position',[.2,.1,.6,.6]);
+if animate==1
+    %h = figure('Units','Normalized','Position',[.2,.1,.6,.6]);
+    figure(3)
     spacecraft = rectangle('Position',[xtotal(1)-rs, ytotal(1)-rs, rs*2, rs*2],'Curvature',[1,1],'facecolor',[0 1 1]);
     target = rectangle('Position',[-rt, -rt, rt*2, rt*2],'Curvature',[1,1],'facecolor',[1 1 0]);
     xlim([-4,4])
     xsize = 8;
     ylim([-xsize/2, xsize/2])
     axis('square')
-    port = rectangle('Position',[dockpos(1,1)-rt/8,dockpos(2,1)-rt/8, rt/4, rt/4],'Curvature',[1,1],'facecolor','r');
-    path = line(xtotal(1),ytotal(1),'color','b','linewidth',1);
+    port = rectangle('Position',[dockpos(1,1)-rt/8,dockpos(1,2)-rt/8, rt/4, rt/4],'Curvature',[1,1],'facecolor','r');
+    path = line(xtotal(1),ytotal(1),'color','g','linewidth',1);
     for i=2:length(dockpos)
         set(spacecraft, 'Position', [xtotal(i)-rt, ytotal(i)-rt, rt*2, rt*2]);
         set(port, 'Position', [dockpos(i,1)-rt/8,dockpos(i,2)-rt/8, rt/4, rt/4]);
         set(path,'XData',xtotal(1:i),'YData',ytotal(1:i))
         drawnow
-        pause((ttotal(i)-ttotal(i-1))/10)
+        %pause((ttotal(i)-ttotal(i-1))/10)
     end
+elseif animate==2
+        %h = figure('Units','Normalized','Position',[.2,.1,.6,.6]);
+    figure(3)
+    spacecraft = rectangle('Position',[xtotal(end)-rs, ytotal(end)-rs, rs*2, rs*2],'Curvature',[1,1],'facecolor',[0 1 1]);
+    target = rectangle('Position',[-rt, -rt, rt*2, rt*2],'Curvature',[1,1],'facecolor',[1 1 0]);
+    xlim([-4,4])
+    xsize = 8;
+    ylim([-xsize/2, xsize/2])
+    axis('square')
+    port = rectangle('Position',[dockpos(end,1)-rt/8,dockpos(end,2)-rt/8, rt/4, rt/4],'Curvature',[1,1],'facecolor','r');
+    path = line(xtotal(1),ytotal(1),'color','g','linewidth',1);
+    set(path,'XData',xtotal(1:end),'YData',ytotal(1:end))
+    drawnow
 end
 
 times = ttotal;
