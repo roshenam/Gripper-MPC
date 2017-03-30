@@ -6,12 +6,12 @@ sysD = c2d(sysC, Ts);
 Ad = sysD.A;
 Bd = sysD.B;
 
-xt = 4; rt = .1; rs = .1;
+xt = 0; rt = .15; rs = .15;
 omega = -400*pi/180;
 theta = pi/4;
-x0 = 0; v0 = -2; xf = (xt-rt-rs); vf = .4;
+x0 = -0.8586; v0 = 0.0854; xf = (xt-rt-rs); vf = .2;
 R = xf-x0
-umax = 1;
+umax = .4/18;
 t1 = abs((vf-v0)/umax);
 if(vf>v0)
     d1 = .5*umax*t1^2+v0*t1
