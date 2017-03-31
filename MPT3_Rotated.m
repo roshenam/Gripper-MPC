@@ -12,12 +12,14 @@ theta_c = 2*pi/180;
 gamma_max = atan(.05/(params.rp+params.rs)) - theta_c
 %gamma_max = 5*pi/180;
 params.gamma = gamma_max;
+params.mass = 18.08; %[kg]
 %%
 omega_c = 100*pi/180;
 
 % rp is the radius of the target, rs is the radius of the spacecraft, gamma
 % is the half angle of the constraint cone
-params.Umax = .2;
+%params.Umax = .2;
+params.Umax = .4/params.mass;
 % Max thrust in Newtons/kg of the free flyer
 params.Tmax = .3; % 50% of stall torque
 % Max torque in N*m/(kg*m^2)
@@ -54,8 +56,8 @@ Ad = sysD.a; Bd = sysD.b; % Matrices for discrete system
 
 %Dd = zeros(5,3);
 %Dd = zeros(3,3);
-Dd = zeros(12,5);
-Cd = zeros(12,6);
+Dd = zeros(10,5);
+Cd = zeros(10,6);
 %Cd = zeros(2,6);
 eta_vel = vmax/(sqrt(2)*(rp+rs));
 eta_theta = theta_c/(rp+rs);
@@ -66,15 +68,10 @@ Cd(2,1) = tan(pi/4-gamma); Cd(2,2) = -1; Dd(2,5) = 1;
  Cd(4,1) = -eta_vel; Cd(4,2) = -eta_vel; Cd(4,4) = 1;
  Cd(5,1) = -eta_vel; Cd(5,2) = -eta_vel; Cd(5,5) = 1; % Vn constraints
  Cd(6,1) = -eta_vel; Cd(6,2) = -eta_vel; Cd(6,5) = -1;
-% %Cd(6,1) = -eta_theta; Cd(6,2) = -eta_theta; Cd(6,3) = 1; % Theta constraints
-% %Cd(7,1) = -eta_theta; Cd(7,2) = -eta_theta; Cd(7,3) = -1;
-% %Cd(6,1) = -1; Cd(6,2) = -1; 
- Cd(7,1) = -eta_omega; Cd(7,2) = -eta_omega; Cd(7,6) = 1; % Omega constraints 
- Cd(8,1) = -eta_omega; Cd(8,2) = -eta_omega; Cd(8,6) = -1;
- Cd(9,4) = 1; % Restricting to 3rd quadrant
- Cd(10,5) = 1; 
- Cd(11,1) = -1;
- Cd(12,1) = -1;
+Cd(7,4) = 1; % Angle of attack constraints through velocity 
+Cd(8,5) = 1; 
+Cd(9,1) = -1; % x > 0
+Cd(10,2) = -1; % y > 0 
 
 %Cd(3,1) = eta1; Cd(3,2) = eta1; Cd(3,4) = -cos(gamma); Cd(3,5) = -sin(gamma);
 %Cd(4,1) = -eta2; Cd(4,2) = -eta2; Cd(4,4) = cos(gamma); Cd(4,5) = sin(gamma);
@@ -90,7 +87,7 @@ Tmax = params.Tmax; % max torque applied by flywheel
 %Ymax = -betaHIGH-eta*(rp+rs);
 %Ymax = [0; 0; -betaHIGH-eta*(rp+rs)];
 Ymax = [(params.rp-params.rtol)/(1-tan(pi/4+gamma)); -(params.rp-params.rtol)/(1-tan(pi/4-gamma));...]%; tan(pi/4-gamma)*(params.rp-params.rtol)]%;...
-    0; 0; 0; 0; 0; 0; 0; 0; 0; 0]%; 0]%; 100*vmax/sqrt(2)];...
+    0; 0; 0; 0; 0; 0; 0; 0]%; 0]%; 100*vmax/sqrt(2)];...
      %vmax/sqrt(2)-eta*(rp+rs)]%; vmax/sqrt(2)-eta*(rp+rs); vmax/sqrt(2)-eta*(rp+rs);...
 %     theta_c - eta*(rp+rs); theta_c - eta*(rp+rs); -eta*(rp+rs);...
 %     omega_max - eta*(rp+rs); omega_max - eta*(rp+rs)];
@@ -109,12 +106,13 @@ system.u.max = [Umax; Umax; Tmax; 10^4; 10^4];
 system.y.max = Ymax;
 %system.x.min = [0; -inf; -inf; -inf; -inf; -inf];
 %system.y.with('softMax');
-system.x.with('reference')
+%system.x.with('reference')
 %xref = [0 0 0 -.2 0 0 0];
 system.x.penalty = QuadFunction(Q);
 system.u.penalty = QuadFunction(R);
 Pn = system.LQRPenalty;
-Tset = system.LQRSet
+%Tset = system.LQRSet
+Tset = system.invariantSet()
 %Tset = system.invariantSet('maxiterations',40)
 system.x.with('terminalPenalty');
 system.x.terminalPenalty = Pn;
@@ -126,16 +124,14 @@ clc
 tic
 params.N = 30;
 N = params.N;
-Nsim = 20;
+Nsim = 30;
 params.Nsim = Nsim;
 mpc = MPCController(system,N);
 %exp = mpc.toExplicit();
 loop = ClosedLoop(mpc, system);
 
-% Specify initial conditions in frame with x axis intersecting with target
-% point. Then rotate into shifted frame with x axis along bottom edge of
-% cone
-x0 =  4; y0 = 3; theta0 = pi/4; vx0 = 0; vy0 = -.8; thetadot0 = 0;
+% Specify initial conditions in frame with target point at pi/4
+x0 =  1; y0 = 1.5; theta0 = phi+pi/4; vx0 = 0; vy0 = 0; thetadot0 = 0;
 Rmat = [cos(phi) -sin(phi); sin(phi) cos(phi)];
 rI = Rmat*[x0;y0];
 vI = Rmat*[vx0;vy0];
@@ -143,7 +139,7 @@ init = [rI(1) rI(2) theta0 vI(1) vI(2) thetadot0];
 
 %r0 = Rmat*[x0;y0];
 %v0 = Rmat*[vx0;vy0];
-nu0 = theta0-phi+pi/4; nu0dot = thetadot0-omega;
+nu0 = theta0-phi-pi/4; nu0dot = thetadot0-omega;
 %x0vec = [r0(1); r0(2); nu0; v0(1); v0(2); nu0dot];
 x0vec = [x0; y0; nu0; vx0; vy0; nu0dot];
 %data = loop.simulate(x0vec(1:6), Nsim,'x.reference',xref')
@@ -174,7 +170,7 @@ utot(3,:) = utotnonI(3,:);
 %collI = length(data.X);
 %Animate(init,params,xtot(:,1:collI),xtot(end,1:collI),0,'2D_Inv_Set',1,1)
 Animate(init,params,xtot(:,1:collI-1),xtot(end,1:collI-1),0,'2D_Inv_Set',1,1)
-
+%Animate(init,params,xtot(:,:),xtot(end,:),0,'2D_Inv_Set',1,1)
 % for i=1:length(data.X(1,:))
 %     Collision_make(params, data.X(1:2,i), data.X(3,i), 1);
 % end
