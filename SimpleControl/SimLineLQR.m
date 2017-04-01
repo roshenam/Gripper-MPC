@@ -14,47 +14,67 @@ Q = 100.*eye(6); Q(3,3) = 10; Q(4,4) = 10;
 R = 100.*eye(3); R(3,3) = 10;
 
 [K,S,E] = lqr(sys,Q,R);
+
 Pstruct.vxd = .03;
 Pstruct.vyd = .03;
-thetad = pi/4;
-x0 = .1;
+thetad = pi/2;
+x0 = 0;
 y0 = 0;
-y0 = [x0, y0, 0, 0, pi, 0, x0, x0]';
+theta0 = pi/2;
+y0 = [x0, y0, 0, 0, 0, 0, x0, y0, theta0]';
 Pstruct.tdis0 = 2;
-Pstruct.tdisf = 2.5;
-Pstruct.udis = 0;
-tspan = [0,7];
-Aaug = zeros(8,8); 
+Pstruct.tdisf = 10;
+Pstruct.udis = .01;
+Pstruct.tdis = .01;
+tspan = [0,10];
+Aaug = zeros(9,9); 
 Aaug(1:6,1:6) = A;
 Aaug(7,1) = 1;
 Aaug(8,2) = 1;
-Baug = zeros(8,3);
+Aaug(9,5) = 1;
+Baug = zeros(9,3);
 Baug(1:6,:) = B;
 Pstruct.A = Aaug;
 Pstruct.B = Baug;
 Pstruct.K = K;
 Pstruct.umax = .4/18;
-Pstruct.tmax = .3;
-Pstruct.R = zeros(8,6);
+Pstruct.tmax = .78;
+Pstruct.R = zeros(9,6);
 Pstruct.R(7,1) = -1;
 Pstruct.R(8,2) = -1;
-Pstruct.Ki = [.1 0; .1 0; 0 0];
+Pstruct.R(9,5) = -1;
+Pstruct.Ki = [.3 0 0; 0 .3 0; 0 0 .8];
 [tout,yout] = ode45(@(t,x) spacecraft_dynfull(t,x,Pstruct),tspan,y0);
 
-% figure
-% plot(yout(:,1),yout(:,2))
-% hold all
-% plot(0:3,0:3)
-% xlim([0,max(yout(:,1))])
-% ylim([0,max(yout(:,2))])
-% figure
-% plot(tout,yout(:,3))
-% hold all
-% plot(tout,yout(:,5))
+figure
+plot(yout(:,1),yout(:,2))
+hold all
+plot(0:3,0:3)
+xlim([0,max(yout(:,1))])
+ylim([0,max(yout(:,2))])
+figure
+hold all
+plot(tout,yout(:,1)-tout.*Pstruct.vxd)
+plot(tout,yout(:,2)-tout.*Pstruct.vyd)
+plot(tout,yout(:,5))
+legend('x error','y error','theta error')
+figure
+hold all
+plot(tout,yout(:,3))
+plot(tout,yout(:,4))
+plot(tout,yout(:,6))
+legend('vx','vy','omega')
 
-Ktot = zeros(3,8);
+figure
+hold all
+plot(tout,yout(:,7))
+plot(tout,yout(:,8))
+plot(tout,yout(:,9))
+legend('x int', 'y int','theta int')
+
+Ktot = zeros(3,9);
 Ktot(:,1:6) = K;
-Ktot(:,7:8) = Pstruct.Ki;
+Ktot(:,7:9) = Pstruct.Ki;
 
 folder_name = 'Line_filegen/';
 fname_dat = 'Line_data.dat';
