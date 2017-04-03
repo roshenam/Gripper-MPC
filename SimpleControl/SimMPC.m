@@ -1,4 +1,4 @@
-function [times, states] = SymMPC(ParamsS,ParamsT,Ts1,Ts2,N,tol,Tset,animate)
+function [times, states] = SimMPC(ParamsS,ParamsT,Ts1,Ts2,N,tol,Tset,animate)
 % Roshena MacPherson: March 30, 2017
 %
 % ParamsS must contain the radius of the spacecraft rs, umax its maximum thrust in N/kg
@@ -127,7 +127,7 @@ else
 end
 
 twait = (N-k)*2*pi/(abs(omega)*(1-v0/vf)) % initial coasting wait time for alignment
-t2 = (Rdis-d1-twait*v0)/vf % coasting time
+t2 = (Rdis-d1-twait*v0)/vf % final coasting time
 if(t2<0)
     disp('Not possible!! Move away and try again')
     xout = NaN;
@@ -151,6 +151,8 @@ u_des = zeros(size(u_desrot));
 for i=1:n_phase2
     u_des(i,:) = Rr2n*u_desrot(i,:)'; % rotating thrust back to table frame
 end
+% add column for torques
+u_des = [u_des zeros(length(t),1)];
 
 %% Generate states for desired trajectory
 x_desrot = zeros(length(u_des),2);
@@ -176,19 +178,49 @@ for i=1:length(x_des)
     v_des(i,:) = Rr2n*v_desrot(i,:)';
 end
 
-state_des = [x_des v_des]; % vector of desired states for phase 2 trajectory
+state_des = [x_des v_des zeros(size(x_des))]; % vector of desired states for phase 2 trajectory
 % figure
 % plot(x_des(:,1),x_des(:,2))
 %% Simulate phase 2
-[K,~,~] = lqr(sysC,Q,R); %Compute LQR controller gains
-y0 = xout(idx,:);
-tspan = [idx*Ts1,idx*Ts1+t1+t2+twait];
-Pstruct.A = A;
-Pstruct.B = B;
+
+Afull = zeros(6,6);
+Afull(1,3) = 1; Afull(2,4) = 1; Afull(5,6) = 1;
+Bfull = zeros(6,3);
+Bfull(3,1) = 1; Bfull(4,2) = 1; Bfull(6,3) = 1;
+Cfull = zeros(3,6);
+Cfull(1,1) = 1; Cfull(2,2) = 1; Cfull(3,5) = 1;
+Dfull = zeros(3,3);
+sysCfull = ss(Afull,Bfull,Cfull,Dfull);
+Qfull = eye(6); Qfull(3,3) = 100; Qfull(4,4) = 100; Qfull(6,6) = 100;
+Rfull = 10^2.*eye(3);
+
+[Kfull,~,~] = lqr(sysCfull,Qfull,Rfull); %Compute LQR controller gains
+y0 = [xout(idx,:) ParamsS.xinit(5) ParamsS.xinit(6) xout(idx,1)-state_des(1,1) xout(idx,2)-state_des(1,2) ParamsS.xinit(5)]';
+%tspan = [idx*Ts1,idx*Ts1+t1+t2+twait];
+tspan = linspace(idx*Ts1,idx*Ts1+t1+t2+twait, 50);
+
+%% adding integral and theta control
+Aaug = zeros(9,9); 
+Aaug(1:4,1:4) = A;
+Aaug(5,6) = 1;
+Aaug(7,1) = 1;
+Aaug(8,2) = 1;
+Aaug(9,5) = 1;
+Baug = zeros(9,3);
+Baug(1:4,1:2) = B;
+Baug(6,3) = 1;
+Pstruct.A = Aaug;
+Pstruct.B = Baug;
+Pstruct.K = Kfull;
+Pstruct.tmax = .78;
+Pstruct.R = zeros(9,6);
+Pstruct.R(7,1) = -1;
+Pstruct.R(8,2) = -1;
+Pstruct.R(9,5) = -1;
+Pstruct.Ki = [.3 0 0; 0 .3 0; 0 0 .1];
 Pstruct.u = u_des;
 Pstruct.t = t+idx*Ts1;
 Pstruct.i = 1;
-Pstruct.K = K;
 Pstruct.umax = umax;
 Pstruct.state_des = state_des;
 %figure(20)
@@ -198,30 +230,24 @@ Pstruct.state_des = state_des;
 %xlim([-1,1])
 %axis('square')
 
-%xtotal = [xout(1:idx,1); yout(1:end,1)];
-%ytotal = [xout(1:idx,2); yout(1:end,2)];
+% Concatenate total position vectors for spacecraft
 xtotal = [xout(1:idx,1); yout(2:end,1)];
 ytotal = [xout(1:idx,2); yout(2:end,2)];
 
-%%
 
-%thetas = theta + omega.*(tout-tout(1))-phi;
-%theta_first = thetas(1) - omega*Nsim*idx;
+%%
+% Generate total time, angle, and dock position vectors
 t_phase1 = linspace(0,idx*Ts1,idx);
 t_phase2 = tout(2:end)';
-%theta_firstvec = theta_first + omega.*t_phase1;
 nu_phase1 = nu0 + omega.*t_phase1;
 nu_phase2 = nu_phase1(end) + omega.*(t_phase2-t_phase2(1)+(t_phase2(2)-t_phase2(1)));
 nu_total = [nu_phase1 nu_phase2]';
-%thetatotal = [ theta_firstvec thetas' ];
-%dockpos = [-rt.*cos(thetatotal); rt.*sin(thetatotal)];
-%dockpos_rot = [-rt.*cos(thetas); rt.*sin(thetas)];
 dockpos = [-rt.*cos(nu_total) rt.*sin(nu_total)];
 
 ttotal = zeros(length(xtotal),1);
 ttotal(1:idx) = t_phase1;
 ttotal((idx+1):end) = t_phase2;
-%%
+%% Animate the result
 if animate==1
     %h = figure('Units','Normalized','Position',[.2,.1,.6,.6]);
     figure(3)
