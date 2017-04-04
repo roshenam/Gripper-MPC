@@ -1,4 +1,6 @@
-clear all; close all; clc;
+clear all; 
+%close all; 
+clc;
 addpath(genpath('~/Software/tbxmanager'))
 warning('off','MATLAB:nargchk:deprecated')
 
@@ -20,13 +22,13 @@ Pstruct.vyd = .03;
 thetad = pi/2;
 x0 = 0;
 y0 = 0;
-theta0 = pi/2;
-y0 = [x0, y0, 0, 0, 0, 0, x0, y0, theta0]';
+theta0 = 0;
+y0 = [x0, y0, 0, 0, theta0, 0, x0, y0, theta0]';
 Pstruct.tdis0 = 2;
-Pstruct.tdisf = 10;
-Pstruct.udis = .01;
-Pstruct.tdis = .01;
-tspan = [0,10];
+Pstruct.tdisf = 4;
+Pstruct.udis = 0;
+Pstruct.torquedis = 0;
+tspan = [0,7];
 Aaug = zeros(9,9); 
 Aaug(1:6,1:6) = A;
 Aaug(7,1) = 1;
@@ -43,16 +45,12 @@ Pstruct.R = zeros(9,6);
 Pstruct.R(7,1) = -1;
 Pstruct.R(8,2) = -1;
 Pstruct.R(9,5) = -1;
-Pstruct.Ki = [.3 0 0; 0 .3 0; 0 0 .8];
+Pstruct.Ki = [0 0 0; 0 0 0; 0 0 0];
 [tout,yout] = ode45(@(t,x) spacecraft_dynfull(t,x,Pstruct),tspan,y0);
 
-figure
-plot(yout(:,1),yout(:,2))
+figure(1)
 hold all
-plot(0:3,0:3)
-xlim([0,max(yout(:,1))])
-ylim([0,max(yout(:,2))])
-figure
+plot(yout(:,1),yout(:,2))
 hold all
 plot(tout,yout(:,1)-tout.*Pstruct.vxd)
 plot(tout,yout(:,2)-tout.*Pstruct.vyd)
@@ -76,6 +74,17 @@ Ktot = zeros(3,9);
 Ktot(:,1:6) = K;
 Ktot(:,7:9) = Pstruct.Ki;
 
+% plot(yout(:,3))
+% hold all
+% plot(yout(:,4))
+% figure
+% plot(yout(:,1)-Pstruct.vxd.*tout)
+
+%Ktot = zeros(3,8);
+%Ktot(:,1:6) = K;
+%Ktot(:,7:9) = Pstruct.Ki;
+
+
 folder_name = 'Line_filegen/';
 fname_dat = 'Line_data.dat';
-writeLineDat([folder_name fname_dat], Aaug, Baug, Ktot, Pstruct.R)
+writeLineDat([folder_name fname_dat], K)
