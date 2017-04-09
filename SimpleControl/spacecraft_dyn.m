@@ -11,7 +11,8 @@ y_des = P.state_des(idx,:);
 u_fric = -.01.*[y(3); y(4)]./sqrt(y(3)^2+y(4)^2);
 uLQR = -P.K*(y(1:6)-y_des');
 ui = -P.Ki*y(7:9);
-utot = unom+uLQR+ui;
+utot = unom+uLQR;
+%utot = unom;
 if utot(1) > P.umax
     utot(1) = P.umax;
 elseif utot(1) < -P.umax
@@ -23,11 +24,13 @@ if utot(2) > P.umax
 elseif utot(2) < -P.umax
     utot(2) = -P.umax;
 end
-
-figure(20)
-plot(idx,uLQR(1)+ui(1),'ro')
-hold all
-plot(idx,uLQR(2)+ui(2),'go')
+% figure(21)
+% hold all
+% plot(idx,y_des(5),'ro')
+% figure(20)
+% plot(idx,uLQR(1),'ro')
+% hold all
+% plot(idx,uLQR(2),'go')
 %u = utot+u_fric;
 %u = unom+u_fric;
 %u = unom+u_fric;
@@ -36,7 +39,7 @@ u = utot;
 %P.i = P.i+1;
 dydt = zeros(4,1);
 %xdot = P.A*(y+y_noise)+P.B*u;
-xdot = P.A*y+P.B*u+P.R*y_des';
+xdot = P.A*y+P.B*u;
 dydt(1) = xdot(1);
 dydt(2) = xdot(2);
 dydt(3) = xdot(3);
