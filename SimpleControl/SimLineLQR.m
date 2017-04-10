@@ -12,18 +12,18 @@ C = eye(6);
 D = zeros(6,3);
 sys = ss(A,B,C,D);
 
-% Q = 100.*eye(6); Q(3,3) = 10; Q(4,4) = 10;
-% R = 100.*eye(3); R(3,3) = 10;
+ Q = 100.*eye(6); Q(3,3) = 10; Q(4,4) = 100; Q(5,5) = 10; Q(6,6) = 1;
+ R = 100.*eye(3); R(3,3) = 10; 
 
-Q = eye(6); Q(3,3) = 100; Q(4,4) = 100; Q(5,5) = 10; Q(6,6) = 1;
-R = 10^2.*eye(3);
+%Q = eye(6); Q(3,3) = 100; Q(4,4) = 100; Q(5,5) = 10; Q(6,6) = 1;
+%R = 10^2.*eye(3);
 
 [K,S,E] = lqr(sys,Q,R);
 
 Pstruct.vxd = .03;
 Pstruct.vyd = .03;
 thetad = pi/2;
-x0 = .01;
+x0 = .1;
 y0 = 0;
 theta0 = pi/2;
 y0 = [x0, y0, 0, 0, theta0, 0, x0, y0, theta0]';
@@ -42,7 +42,7 @@ Baug(1:6,:) = B;
 Pstruct.A = Aaug;
 Pstruct.B = Baug;
 Pstruct.K = K;
-Pstruct.umax = (.4/18.08)/sqrt(2);
+Pstruct.umax = (.4/18.08);
 Pstruct.tmax = 1.48;
 Pstruct.R = zeros(9,6);
 Pstruct.R(7,1) = -1;
