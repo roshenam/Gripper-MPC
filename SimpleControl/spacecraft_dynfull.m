@@ -24,15 +24,16 @@ if u(3) > P.tmax
 elseif u(3) < -P.tmax
     u(3) = -P.tmax;
 end
-% figure(3)
-% hold all
-% plot(t,u(1),'ro')
-% hold all
-% plot(t,u(2),'go')
+ figure(4)
+ hold all
+ plot(t,u(1),'ro')
+ hold all
+ plot(t,u(2),'go')
 % plot(t,u(3),'bo')
 u = u+[u_dis; 0; t_dis];
 dydt = zeros(9,1);
-xdot = P.A*y+P.B*u+P.R*y_des;
+%xdot = P.A*y+P.B*u+P.R*y_des;
+xdot = P.A*y+P.B*u;
 dydt(1) = xdot(1);
 dydt(2) = xdot(2);
 dydt(3) = xdot(3);
